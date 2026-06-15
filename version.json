@@ -1,5 +1,5 @@
 {
-  "version": "KJH비서_1.3.3",
+  "version": "KJH비서_1.3.4",
   "download_url": "https://raw.githubusercontent.com/jackson990408-png/kjh-biseo/main/files/biseo.pyw",
-  "changelog": "배포 준비 — AI 엔진(Ollama) 미설치 시 '재시작' 대신 설치 안내·다운로드 페이지 자동 열기, 최초 실행 시 바탕화면·시작메뉴 바로가기 자동 생성(한글 경로 인코딩 문제 우회), 개인용 쇼핑몰 관리자 주소 제거, 설치 프로그램에 matplotlib·comtypes 추가"
+  "changelog": "일정 분류를 개인·회사 외에 직접 추가/삭제 가능, 폴더 정리·쇼핑 주문을 일정 창처럼 깔끔한 대시보드 모달로, '할 수 있는 일' 창 다크모드 대응, 피카츄를 메인 창 밖 별도 위젯 창으로 분리(항상 위·처음 우측하단·드래그 이동·클릭하면 비서 창 열림, 둥둥 뜨는 애니메이션 제거)"
 }
