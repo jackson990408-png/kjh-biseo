@@ -50,7 +50,7 @@ INBOX = os.path.join(HOME, "받은파일")              # 사용자가 처리할
 HIST_VEC = os.path.join(HOME, "대화색인.json")       # 과거 대화 의미검색용 임베딩 캐시
 WORKFLOW = os.path.join(HOME, "워크플로우.json")      # 프로젝트·업무 진척도 보드
 
-VERSION = "KJH비서_1.3.3"   # 업데이트 시 이 값만 올리면 됨
+VERSION = "KJH비서_1.3.4"   # 업데이트 시 이 값만 올리면 됨
 # GitHub raw URL — version.json 위치. 빈 문자열이면 업데이트 체크 안 함.
 # 예) "https://raw.githubusercontent.com/내아이디/kjh-biseo/main/version.json"
 UPDATE_JSON_URL = "https://raw.githubusercontent.com/jackson990408-png/kjh-biseo/main/version.json"
@@ -1960,13 +1960,15 @@ a{color:var(--accent)}
 .brand{display:flex;align-items:center;gap:9px;font-family:Georgia,'Malgun Gothic',serif;
   font-size:17px;font-weight:600;padding:4px 6px 14px}
 .brand .star{color:var(--accent);font-size:20px;line-height:1}
-#newchat,#calbtn,#featbtn,#namebtn{width:100%;border:1px solid var(--line2);background:var(--white);color:var(--txt);
+#newchat,#calbtn,#memobtn,#wfbtn,#cleanbtn,#shopbtn,#featbtn,#namebtn{width:100%;border:1px solid var(--line2);background:var(--white);color:var(--txt);
   border-radius:10px;padding:9px 12px;font-size:13.5px;font-family:inherit;cursor:pointer;
   display:flex;align-items:center;gap:8px;transition:.15s}
-#newchat:hover,#calbtn:hover,#featbtn:hover,#namebtn:hover{border-color:var(--accent);color:var(--accent)}
-#calbtn,#featbtn,#namebtn{margin-top:6px}
+#newchat:hover,#calbtn:hover,#memobtn:hover,#wfbtn:hover,#cleanbtn:hover,#shopbtn:hover,#featbtn:hover,#namebtn:hover{border-color:var(--accent);color:var(--accent)}
+#calbtn,#memobtn,#wfbtn,#cleanbtn,#shopbtn,#featbtn,#namebtn{margin-top:6px}
 #featbtn{background:linear-gradient(180deg,#FFF 0%,#FBF1EC 100%);border-color:#E7C3B4}
 #featbtn:hover{background:#FBF1EC}
+body.dark #featbtn{background:linear-gradient(180deg,#2E2A26 0%,#3A2E28 100%);border-color:#5A4138;color:var(--txt)}
+body.dark #featbtn:hover{background:#3A2E28}
 .side-label{font-size:11.5px;color:var(--mut);padding:14px 20px 6px;letter-spacing:.5px}
 #histlist{flex:1;overflow-y:auto;padding:0 8px}
 .hitem{display:flex;align-items:center;gap:4px;border-radius:9px;padding:8px 10px;cursor:pointer;transition:.12s}
@@ -2127,10 +2129,12 @@ footer{flex-shrink:0;padding:6px 24px 14px}
 .evitem .ecat{font-size:10px;border-radius:4px;padding:1px 6px;font-weight:600;flex-shrink:0}
 .ecat.work{background:#D5E8FF;color:#1A6BC4}
 .ecat.pers{background:#E8F5E9;color:#2E7D32}
-.cfilter{display:flex;gap:4px;margin-bottom:8px}
+.cfilter{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
 .cfbtn{border:1px solid var(--line2);background:var(--white);color:var(--mut);border-radius:6px;
   padding:2px 9px;font-size:11.5px;cursor:pointer;font-family:inherit;transition:.12s}
 .cfbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.cfbtn.cfadd{border-style:dashed;color:var(--accent)}
+.cfbtn.cfadd:hover{background:var(--accent);color:#fff;border-style:solid}
 .addrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
 .addrow input,.addrow select{border:1px solid var(--line2);border-radius:8px;padding:7px 9px;
   font-size:13px;font-family:inherit;background:var(--bg);color:var(--txt);outline:none;margin:0;width:auto}
@@ -2179,6 +2183,34 @@ footer{flex-shrink:0;padding:6px 24px 14px}
 .fex:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 .featnote{font-size:11px;color:var(--mut);padding-top:12px;text-align:center;border-top:1px solid var(--line);margin-top:10px}
 @media(max-width:560px){.featgrid{grid-template-columns:1fr}}
+
+/* ---------- 폴더정리·쇼핑 대시보드 모달 ---------- */
+.dashbox{width:560px;max-width:94vw;display:flex;flex-direction:column;gap:2px}
+.dashsub{font-size:12.5px;color:var(--mut);line-height:1.55;margin:4px 2px 6px}
+.dashsub b{color:var(--txt)}
+.dashsec{font-size:12px;font-weight:700;color:var(--txt);margin:10px 2px 6px}
+.cleangrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cleancard{display:flex;align-items:center;gap:8px;border:1px solid var(--line2);background:var(--white);
+  border-radius:10px;padding:10px 12px;cursor:pointer;transition:.13s;font-size:13px;color:var(--txt);text-align:left}
+.cleancard:hover{border-color:var(--accent);color:var(--accent)}
+.cleancard .cpath{font-size:10.5px;color:var(--mut);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cleancard .cleft{flex:1;min-width:0}
+.dashbtn{margin-top:10px;border:1px dashed var(--line2);background:var(--white);color:var(--txt);
+  border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;cursor:pointer;transition:.13s;width:100%}
+.dashbtn:hover{border-color:var(--accent);color:var(--accent)}
+.dashbtn.primary{border-style:solid;background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.dashbtn.primary:hover{background:var(--accent-h);color:#fff}
+.dashinput{width:100%;box-sizing:border-box;border:1px solid var(--line2);border-radius:10px;
+  padding:11px 13px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--txt)}
+.dashresult{margin-top:12px;font-size:12.5px;color:var(--txt);line-height:1.6;white-space:pre-wrap;
+  max-height:200px;overflow-y:auto}
+.shopsites{display:flex;flex-wrap:wrap;gap:8px}
+.shopchk{display:flex;align-items:center;gap:5px;border:1px solid var(--line2);border-radius:8px;
+  padding:6px 11px;font-size:12.5px;color:var(--txt);cursor:pointer}
+.shopex{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.shoptag{border:1px solid var(--line2);border-radius:14px;padding:3px 11px;font-size:11.5px;
+  color:var(--mut);cursor:pointer;transition:.12s}
+.shoptag:hover{border-color:var(--accent);color:var(--accent)}
 
 /* ---------- 피카츄 캐릭터 ---------- */
 #pika{position:fixed;right:26px;bottom:24px;width:120px;z-index:9000;
@@ -2409,19 +2441,6 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
 </aside>
 <button id="wfrtab" title="워크플로우 패널 열기">📋</button>
 
-<div id="pika" class="st-idle" title="드래그해서 옮길 수 있어요">
-  <div class="bubble" id="pbubble"></div>
-  <div class="pchar">
-    <span class="pclose" id="pclose" title="피카츄 숨기기">✕</span>
-    <div class="pear l"></div><div class="pear r"></div>
-    <div class="pface">
-      <div class="peye l"></div><div class="peye r"></div>
-      <div class="pcheek l"></div><div class="pcheek r"></div>
-      <div class="pmouth"></div>
-    </div>
-  </div>
-</div>
-
 <div id="cmodal" class="overlay"><div class="box">
   <h3>확인</h3><p id="ctext"></p>
   <div class="brow"><button class="bcancel" id="ccancel">취소</button><button class="bok" id="cok">확인</button></div>
@@ -2513,11 +2532,7 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
   </div>
   <div id="calpane">
     <div id="calgrid"></div>
-    <div class="cfilter">
-      <button class="cfbtn active" id="cf전체" onclick="setCatFilter('전체')">전체</button>
-      <button class="cfbtn" id="cf개인" onclick="setCatFilter('개인')">👤 개인</button>
-      <button class="cfbtn" id="cf회사" onclick="setCatFilter('회사')">🏢 회사</button>
-    </div>
+    <div class="cfilter" id="cfilter"></div>
     <div id="daylist"></div>
     <div class="addrow">
       <input id="evtitle" placeholder="일정 내용 — Enter로 추가">
@@ -2564,6 +2579,41 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
   <div class="featsub">아래 예시를 누르면 입력창에 채워집니다 — Enter로 실행하세요. 전부 무료·내 컴퓨터에서 동작하며, 인터넷으로 대화가 새어 나가지 않습니다.</div>
   <div class="featgrid" id="featgrid"></div>
   <div class="featnote">🔒 위험한 명령(디스크 포맷·시스템 폴더 삭제 등)은 자동 차단됩니다 · 원본 파일은 덮어쓰지 않고 결과물 폴더에 새로 저장합니다</div>
+</div></div>
+<div id="cleanmodal" class="overlay"><div class="box dashbox">
+  <div class="calhead">
+    <span class="chttl">🧹 폴더 정리</span>
+    <span class="flex"></span>
+    <button class="cnav" id="cleanclose" title="닫기">✕</button>
+  </div>
+  <div class="dashsub">폴더 안의 파일을 종류별 하위폴더(이미지·문서·엑셀·도면·압축 등)로 자동 분류합니다. <b>원본은 이동만 하고 삭제하지 않습니다.</b></div>
+  <div class="dashsec">자주 쓰는 폴더</div>
+  <div id="cleanquick" class="cleangrid"></div>
+  <button id="cleanpick" class="dashbtn">📁 다른 폴더 선택해서 정리…</button>
+  <div id="cleanresult" class="dashresult"></div>
+</div></div>
+<div id="shopmodal" class="overlay"><div class="box dashbox">
+  <div class="calhead">
+    <span class="chttl">🛒 쇼핑·주문</span>
+    <span class="flex"></span>
+    <button class="cnav" id="shopclose" title="닫기">✕</button>
+  </div>
+  <div class="dashsub">사고 싶은 물건을 적으면 비서가 가격·평점을 조사해 후보를 표로 정리하고 추천합니다. <b>결제 확정은 항상 직접 확인 후 진행</b>합니다.</div>
+  <div class="dashsec">무엇을 찾을까요?</div>
+  <input id="shopq" class="dashinput" placeholder="예: 인체공학 사무용 의자 10만원대">
+  <div class="dashsec">쇼핑몰</div>
+  <div class="shopsites">
+    <label class="shopchk"><input type="checkbox" value="쿠팡" checked> 쿠팡</label>
+    <label class="shopchk"><input type="checkbox" value="네이버쇼핑" checked> 네이버쇼핑</label>
+    <label class="shopchk"><input type="checkbox" value="11번가"> 11번가</label>
+    <label class="shopchk"><input type="checkbox" value="G마켓"> G마켓</label>
+  </div>
+  <div class="shopex">
+    <span class="shoptag" onclick="setShop('A4용지 한 박스 최저가')">A4용지 박스</span>
+    <span class="shoptag" onclick="setShop('무선 마우스 3만원 이하 가성비')">무선 마우스</span>
+    <span class="shoptag" onclick="setShop('사무실 공기청정기 30평형')">공기청정기</span>
+  </div>
+  <button id="shopgo" class="dashbtn primary">🔎 조사 시작</button>
 </div></div>
 
 <script>
@@ -2995,6 +3045,52 @@ renderQ();
 
 /* ---------- 일정 · 메모 (달력) ---------- */
 let calY,calM,selDate,schedData={events:[],memos:[]},calCatFilter='전체';
+let calCats=['개인','회사'];
+function catIcon(name){if(name==='개인')return '👤';if(name==='회사')return '🏢';return '🏷️';}
+async function loadCats(){
+  try{const c=await pywebview.api.cal_cats();if(Array.isArray(c)&&c.length)calCats=c;}catch(_){}
+  renderCatUI();
+}
+function renderCatUI(){
+  // 일정 추가/수정 셀렉트
+  ['evcat','editCat'].forEach(function(id){
+    const sel=document.getElementById(id);if(!sel)return;
+    const cur=sel.value;sel.innerHTML='';
+    calCats.forEach(function(c){
+      const o=document.createElement('option');o.value=c;o.textContent=catIcon(c)+' '+c;sel.appendChild(o);
+    });
+    if(calCats.indexOf(cur)>=0)sel.value=cur;
+  });
+  // 필터 버튼 줄
+  const bar=document.getElementById('cfilter');if(!bar)return;
+  bar.innerHTML='';
+  const mk=function(label,val,active){
+    const b=document.createElement('button');b.className='cfbtn'+(active?' active':'');
+    b.id='cf'+val;b.textContent=label;b.onclick=function(){setCatFilter(val)};return b;};
+  bar.appendChild(mk('전체','전체',calCatFilter==='전체'));
+  calCats.forEach(function(c){bar.appendChild(mk(catIcon(c)+' '+c,c,calCatFilter===c));});
+  const add=document.createElement('button');add.className='cfbtn cfadd';add.textContent='＋ 분류';
+  add.title='새 분류 추가';add.onclick=addCatPrompt;bar.appendChild(add);
+  // 분류가 2개(기본)보다 많으면 분류 삭제 버튼도
+  if(calCats.length>1){
+    const del=document.createElement('button');del.className='cfbtn cfadd';del.textContent='－ 분류';
+    del.title='분류 삭제';del.onclick=delCatPrompt;bar.appendChild(del);
+  }
+}
+async function addCatPrompt(){
+  const name=await askInput('새 일정 분류 이름','예: 가족, 프로젝트A, 운동');
+  if(!name||!name.trim())return;
+  try{calCats=await pywebview.api.cal_cat_add(name.trim());}catch(_){}
+  renderCatUI();
+}
+async function delCatPrompt(){
+  if(calCats.length<=1)return;
+  const name=await askInput('삭제할 분류 이름을 정확히 입력','현재: '+calCats.join(', '));
+  if(!name||!name.trim())return;
+  try{calCats=await pywebview.api.cal_cat_del(name.trim());}catch(_){}
+  if(calCatFilter!=='전체'&&calCats.indexOf(calCatFilter)<0)calCatFilter='전체';
+  renderCatUI();renderCal();renderDay();
+}
 const calmodal=document.getElementById('calmodal');
 function pad2(n){return (n<10?'0':'')+n}
 function dstr(y,m,d){return y+'-'+pad2(m+1)+'-'+pad2(d)}
@@ -3004,6 +3100,7 @@ function remLabel(o){o=+o;if(o===0)return '정각';if(o%1440===0)return (o===144
 async function openCal(){
   const n=new Date();calY=n.getFullYear();calM=n.getMonth();selDate=todayStr();
   calmodal.style.display='flex';
+  await loadCats();
   await calRefresh();
   document.getElementById('evtitle').focus();
 }
@@ -3059,7 +3156,7 @@ function renderDay(){
     const cat=ev.category||'개인';
     const catBadge=document.createElement('span');
     catBadge.className='ecat '+(cat==='회사'?'work':'pers');
-    catBadge.textContent=cat==='회사'?'🏢':'👤';catBadge.title=cat;
+    catBadge.textContent=catIcon(cat);catBadge.title=cat;
     const rem=document.createElement('span');rem.className='erem';
     rem.textContent=(ev.remind&&ev.remind.length)?'🔔 '+ev.remind.map(remLabel).join(', '):'';
     const edit=document.createElement('button');edit.className='evbtn';edit.textContent='✏';edit.title='수정';
@@ -3086,7 +3183,7 @@ async function addEvent(){
 }
 function setCatFilter(cat){
   calCatFilter=cat;
-  ['전체','개인','회사'].forEach(function(c){
+  ['전체'].concat(calCats).forEach(function(c){
     const b=document.getElementById('cf'+c);
     if(b)b.classList.toggle('active',c===cat);
   });
@@ -3342,7 +3439,7 @@ async function renderFavs(){
 function openSettings(){
   const m=document.getElementById('setmodal');
   document.getElementById('set_dark').checked=document.body.classList.contains('dark');
-  document.getElementById('set_pika').checked=(pikaEl.style.display!=='none');
+  document.getElementById('set_pika').checked=!!window._pikaOn;
   document.getElementById('set_style').value=(window._answerStyle||'표준');
   document.getElementById('set_rate').value=_setRate;
   document.getElementById('set_rateval').textContent=(_setRate).toFixed(2)+'x';
@@ -3351,7 +3448,7 @@ function openSettings(){
 document.getElementById('setbtn').onclick=openSettings;
 document.getElementById('setclose').onclick=function(){document.getElementById('setmodal').style.display='none'};
 document.getElementById('set_dark').onchange=function(){applyTheme(this.checked);pywebview.api.save_theme(this.checked)};
-document.getElementById('set_pika').onchange=function(){pikaShow(this.checked);pywebview.api.save_pika(this.checked)};
+document.getElementById('set_pika').onchange=function(){pikaShow(this.checked)};
 document.getElementById('set_style').onchange=function(){
   window._answerStyle=this.value;pywebview.api.set_style(this.value).then(sysMsg)};
 document.getElementById('set_rate').oninput=function(){
@@ -3492,24 +3589,58 @@ document.getElementById('wfrhide').onclick=function(){showRail(false)};
 document.getElementById('wfrtab').onclick=function(){showRail(true);window._wfRefresh()};
 document.getElementById('wfropen').onclick=openWf;
 
-/* ── 폴더 정리 ── */
-document.getElementById('cleanbtn').onclick=async function(){
+/* ── 폴더 정리 모달 ── */
+const cleanmodal=document.getElementById('cleanmodal');
+async function openClean(){
+  cleanmodal.style.display='flex';
+  document.getElementById('cleanresult').textContent='';
+  const box=document.getElementById('cleanquick');box.innerHTML='<span style="font-size:12px;color:var(--mut)">불러오는 중…</span>';
+  let list=[];try{list=await pywebview.api.clean_folders();}catch(_){}
+  box.innerHTML='';
+  list.forEach(function(f){
+    const c=document.createElement('button');c.className='cleancard';
+    c.innerHTML='<div class="cleft"><div>'+esc(f.label)+'</div><div class="cpath">'+esc(f.path)+'</div></div>';
+    c.onclick=function(){runClean(f.path);};
+    box.appendChild(c);
+  });
+}
+async function runClean(path){
+  const res=document.getElementById('cleanresult');
+  res.textContent='🧹 정리 중…';
   if(window._pikaWork)window._pikaWork();
-  setStatus('🧹 폴더 정리 중…','');
-  const r=await pywebview.api.organize_folder();
-  setStatus('● '+(window._modelName||''),'ok');
-  if(r){aiMsg(r);if(window._pikaDone)window._pikaDone();}
-};
+  let r='';try{r=path?await pywebview.api.organize_folder_path(path):await pywebview.api.organize_folder();}catch(_){r='⚠ 정리 중 오류가 발생했습니다.';}
+  if(window._pikaDone)window._pikaDone();
+  if(r){res.textContent=r;aiMsg(r);}else{res.textContent='취소되었습니다.';}
+}
+document.getElementById('cleanbtn').onclick=openClean;
+document.getElementById('cleanclose').onclick=function(){cleanmodal.style.display='none'};
+document.getElementById('cleanpick').onclick=function(){runClean('');};
+cleanmodal.addEventListener('click',function(e){if(e.target===cleanmodal)cleanmodal.style.display='none'});
 
-/* ── 쇼핑·주문 ── */
-document.getElementById('shopbtn').onclick=async function(){
-  const q=await askInput('무엇을 주문·구매할까요?','예: 인체공학 사무용 의자 10만원대');
-  if(!q||!q.trim())return;
-  inp.value='다음 물건을 쇼핑해줘: '+q.trim()+
-    '\n\n①가격·평점 조사해서 후보 2~3개를 표로 정리하고 ②1순위 추천 ③쿠팡 검색 페이지 열어줘. '+
-    '결제 확정은 내 확인 받고 진행해.';
+/* ── 쇼핑·주문 모달 ── */
+const shopmodal=document.getElementById('shopmodal');
+function setShop(t){document.getElementById('shopq').value=t;document.getElementById('shopq').focus();}
+function openShop(){
+  shopmodal.style.display='flex';
+  setTimeout(function(){document.getElementById('shopq').focus();},100);
+}
+function runShop(){
+  const q=document.getElementById('shopq').value.trim();
+  if(!q){document.getElementById('shopq').focus();return;}
+  const sites=[];
+  shopmodal.querySelectorAll('.shopsites input:checked').forEach(function(c){sites.push(c.value);});
+  const where=sites.length?sites.join('·'):'쿠팡·네이버쇼핑';
+  shopmodal.style.display='none';
+  inp.value='다음 물건을 쇼핑해줘: '+q+
+    '\n\n①'+where+'에서 가격·평점을 조사해 후보 2~3개를 표로 정리하고 ②1순위를 추천하고 ③검색 페이지를 열어줘. '+
+    '결제 확정은 반드시 내 확인을 받고 진행해.';
   doSend();
-};
+}
+document.getElementById('shopbtn').onclick=openShop;
+document.getElementById('shopclose').onclick=function(){shopmodal.style.display='none'};
+document.getElementById('shopgo').onclick=runShop;
+document.getElementById('shopq').addEventListener('keydown',function(e){if(e.key==='Enter')runShop();});
+shopmodal.addEventListener('click',function(e){if(e.target===shopmodal)shopmodal.style.display='none'});
 
 /* ── 응답 시간·모델 표시 ── */
 let _genStart=0;
@@ -3522,67 +3653,12 @@ function showGenMeta(){
   _genStart=0;
 }
 
-/* ── 피카츄 캐릭터 ── */
-var pikaEl=document.getElementById('pika');
-var pikaBubble=document.getElementById('pbubble');
-var _pikaTimer=null;
-var PIKA_MSG={
-  idle:['피카! 무엇을 도와드릴까요?','대표님, 시킬 일이 있나요? 피카츄!','쉬는 중… 편하게 말 걸어주세요 ⚡','오늘도 함께 일해요, 피카!','준비 완료! 언제든 부르세요 ⚡'],
-  work:['피카피카! 열심히 하는 중… ⚡','지금 작업하고 있어요!','조금만 기다려 주세요, 피카!','집중 중… 곧 끝나요 ⚡','대표님 일 처리 중입니다!'],
-  done:['피카츄! 다 했어요 ⚡','완료했습니다, 대표님!','짠! 작업 끝났어요 ✨','피카피카~ 성공!','다음 일도 맡겨주세요!']
-};
-function _pikaPick(a){return a[Math.floor(Math.random()*a.length)]}
-function pikaSay(state,text,hold){
-  if(pikaEl.style.display==='none')return;
-  pikaEl.classList.remove('st-idle','st-work','st-done');
-  pikaEl.classList.add('st-'+state);
-  pikaBubble.textContent=text||_pikaPick(PIKA_MSG[state]||PIKA_MSG.idle);
-  pikaBubble.classList.add('show');
-  if(_pikaTimer)clearTimeout(_pikaTimer);
-  if(state!=='work'){
-    _pikaTimer=setTimeout(function(){
-      pikaBubble.classList.remove('show');
-      pikaEl.classList.remove('st-work','st-done');pikaEl.classList.add('st-idle');
-    },hold||4500);
-  }
-}
-function pikaShow(on){
-  pikaEl.style.display=on?'flex':'none';
-  if(on)setTimeout(function(){pikaSay('idle')},400);
-}
-/* 상태 변화 연결 */
-window._pikaWork=function(){pikaSay('work')};
-window._pikaDone=function(){pikaSay('done')};
-/* 닫기 */
-document.getElementById('pclose').onclick=function(e){e.stopPropagation();pikaShow(false);
-  try{pywebview.api.save_pika(false)}catch(_){}};
-/* 클릭하면 한마디 */
-pikaEl.addEventListener('click',function(e){
-  if(_pikaDragged)return;
-  if(busy)pikaSay('work');else pikaSay('idle');
-});
-/* 드래그 이동 */
-var _pikaDrag=false,_pikaDragged=false,_pdx=0,_pdy=0;
-pikaEl.addEventListener('mousedown',function(e){
-  if(e.target.id==='pclose')return;
-  _pikaDrag=true;_pikaDragged=false;pikaEl.classList.add('dragging');
-  var r=pikaEl.getBoundingClientRect();
-  _pdx=e.clientX-r.left;_pdy=e.clientY-r.top;
-  pikaEl.style.right='auto';pikaEl.style.bottom='auto';
-  pikaEl.style.left=r.left+'px';pikaEl.style.top=r.top+'px';
-  e.preventDefault();
-});
-window.addEventListener('mousemove',function(e){
-  if(!_pikaDrag)return;_pikaDragged=true;
-  var x=Math.max(0,Math.min(window.innerWidth-pikaEl.offsetWidth,e.clientX-_pdx));
-  var y=Math.max(0,Math.min(window.innerHeight-pikaEl.offsetHeight,e.clientY-_pdy));
-  pikaEl.style.left=x+'px';pikaEl.style.top=y+'px';
-});
-window.addEventListener('mouseup',function(){
-  if(!_pikaDrag)return;_pikaDrag=false;pikaEl.classList.remove('dragging');
-  try{pywebview.api.save_pika_pos(parseInt(pikaEl.style.left)||0,parseInt(pikaEl.style.top)||0)}catch(_){}
-  setTimeout(function(){_pikaDragged=false},50);
-});
+/* ── 피카츄: 메인 창 밖 별도 위젯 창에서 떠다닌다(아래는 그 창을 제어) ── */
+window._pikaOn=true;
+window._pikaWork=function(){try{pywebview.api.pika_state('work')}catch(_){}};
+window._pikaDone=function(){try{pywebview.api.pika_state('done')}catch(_){}};
+/* 설정 토글에서 호출 — 외부 피카츄 창 표시/숨김 */
+function pikaShow(on){window._pikaOn=!!on;try{pywebview.api.pika_toggle(!!on)}catch(_){}}
 
 /* ── 링크를 시스템 브라우저로 열기 (pywebview 대응) ── */
 document.addEventListener('click',function(e){
@@ -3591,6 +3667,100 @@ document.addEventListener('click',function(e){
 });
 
 window.addEventListener('pywebviewready',function(){pywebview.api.on_ready()});
+</script>
+</body></html>"""
+
+
+# ── 피카츄 떠다니는 외부 위젯 창 (메인 창 밖, 항상 위) ──
+PIKA_HTML = r"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:transparent;overflow:hidden;
+  font-family:'Malgun Gothic',sans-serif;user-select:none;-webkit-user-select:none}
+#wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:flex-end;padding:6px;cursor:grab}
+#wrap:active{cursor:grabbing}
+#bubble{background:#fff;color:#1f1f1f;border:2px solid #2b2b2b;border-radius:14px;
+  padding:7px 11px;font-size:12px;line-height:1.4;max-width:150px;text-align:center;
+  margin-bottom:8px;box-shadow:0 3px 10px rgba(0,0,0,.18);font-weight:600;position:relative;
+  opacity:0;transform:translateY(6px) scale(.96);transition:.22s;pointer-events:none}
+#bubble.show{opacity:1;transform:none}
+#bubble:after{content:"";position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);
+  border:7px solid transparent;border-top-color:#2b2b2b}
+#bubble:before{content:"";position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);
+  border:6px solid transparent;border-top-color:#fff;z-index:1}
+.pchar{position:relative;width:84px;height:78px;cursor:pointer;
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,.3))}
+.st-work .pchar{animation:pwork .6s ease-in-out infinite}
+.st-done .pchar{animation:pdone .5s ease-in-out 3}
+@keyframes pwork{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-3px) rotate(2deg)}}
+@keyframes pdone{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-9px) scale(1.06)}}
+.pear{position:absolute;top:-24px;width:14px;height:42px;background:#f9d423;border-radius:50% 50% 40% 40%;border:2px solid #3a2f0b}
+.pear.l{left:14px;transform:rotate(-18deg);transform-origin:bottom}
+.pear.r{right:14px;transform:rotate(18deg);transform-origin:bottom}
+.pear:after{content:"";position:absolute;top:-2px;left:-2px;right:-2px;height:15px;background:#2b2b2b;border-radius:50% 50% 40% 40%}
+.pface{position:absolute;top:6px;left:6px;width:72px;height:64px;background:#f9d423;border-radius:50% 50% 48% 48%;border:2.5px solid #3a2f0b}
+.peye{position:absolute;top:20px;width:14px;height:16px;background:#2b2b2b;border-radius:50%}
+.peye.l{left:14px}.peye.r{right:14px}
+.peye:after{content:"";position:absolute;top:2px;left:2px;width:5px;height:5px;background:#fff;border-radius:50%}
+.pcheek{position:absolute;top:32px;width:15px;height:13px;background:#e8473f;border-radius:50%;opacity:.92}
+.pcheek.l{left:4px}.pcheek.r{right:4px}
+.pmouth{position:absolute;top:40px;left:50%;transform:translateX(-50%);width:14px;height:7px;
+  border:2.2px solid #3a2f0b;border-top:none;border-radius:0 0 14px 14px}
+.st-work .peye{height:13px;top:21px}
+.st-work .pmouth{width:8px;height:8px;border:2.2px solid #3a2f0b;border-radius:50%}
+.st-done .peye{height:8px;background:transparent;border:2.5px solid #2b2b2b;border-bottom:none;
+  top:22px;width:13px;border-top-left-radius:10px;border-top-right-radius:10px}
+.st-done .peye:after{display:none}
+.st-done .pmouth{width:18px;height:11px;background:#e8473f;border:2.2px solid #3a2f0b;border-top:none}
+#pclose{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;
+  background:#fff;border:1.5px solid #888;color:#555;font-size:11px;line-height:15px;text-align:center;
+  cursor:pointer;opacity:0;transition:.15s;z-index:5}
+#wrap:hover #pclose{opacity:.9}
+#pclose:hover{background:#e8473f;color:#fff;border-color:#e8473f}
+</style></head>
+<body>
+<div id="wrap">
+  <button id="pclose" title="피카츄 숨기기">✕</button>
+  <div id="bubble"></div>
+  <div class="pchar" id="pchar">
+    <div class="pear l"></div><div class="pear r"></div>
+    <div class="pface">
+      <div class="peye l"></div><div class="peye r"></div>
+      <div class="pcheek l"></div><div class="pcheek r"></div>
+      <div class="pmouth"></div>
+    </div>
+  </div>
+</div>
+<script>
+var wrap=document.getElementById('wrap'),bubble=document.getElementById('bubble'),
+    pchar=document.getElementById('pchar');
+var MSG={idle:['피카! 무엇을 도와드릴까요?','대표님, 시킬 일이 있나요? 피카츄!','클릭하면 비서 창이 떠요 ⚡','오늘도 함께 일해요, 피카!'],
+  work:['피카피카! 작업 중… ⚡','지금 처리하고 있어요!','조금만 기다려 주세요, 피카!'],
+  done:['피카츄! 다 했어요 ⚡','완료했습니다, 대표님!','짠! 작업 끝났어요 ✨']};
+var _t=null;
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+window.setState=function(state,text){
+  wrap.classList.remove('st-idle','st-work','st-done');
+  wrap.classList.add('st-'+state);
+  bubble.textContent=text||pick(MSG[state]||MSG.idle);
+  bubble.classList.add('show');
+  if(_t)clearTimeout(_t);
+  if(state!=='work'){_t=setTimeout(function(){bubble.classList.remove('show');
+    wrap.classList.remove('st-work','st-done');},4500);}
+};
+var _moved=false,_dx=0,_dy=0;
+pchar.addEventListener('mousedown',function(e){_moved=false;_dx=e.screenX;_dy=e.screenY;});
+pchar.addEventListener('mouseup',function(e){
+  if(Math.abs(e.screenX-_dx)<4&&Math.abs(e.screenY-_dy)<4){
+    try{pywebview.api.focus();}catch(_){}
+    window.setState('idle');
+  }
+});
+document.getElementById('pclose').addEventListener('click',function(e){
+  e.stopPropagation();try{pywebview.api.hide();}catch(_){}
+});
+window.addEventListener('pywebviewready',function(){setTimeout(function(){window.setState('idle');},500);});
 </script>
 </body></html>"""
 
@@ -3906,9 +4076,55 @@ class Api:
         save_settings({"pika_x": int(x), "pika_y": int(y)})
         return "ok"
 
+    def pika_state(self, state):
+        """피카츄 외부 창에 상태(idle/work/done)를 전달한다."""
+        try:
+            if getattr(self, "_pika", None):
+                self._pika.evaluate_js(f"window.setState&&setState({json.dumps(state)})")
+        except Exception:
+            pass
+        return "ok"
+
+    def pika_toggle(self, on):
+        """피카츄 외부 창을 표시/숨김 하고 설정에 저장한다."""
+        save_settings({"pika": bool(on)})
+        try:
+            if getattr(self, "_pika", None):
+                if on:
+                    self._pika.show()
+                else:
+                    self._pika.hide()
+        except Exception:
+            pass
+        return "ok"
+
     def save_wf_rail(self, on):
         save_settings({"wf_rail": bool(on)})
         return "ok"
+
+    def cal_cats(self):
+        """일정 분류 목록을 반환한다(기본 개인·회사). 사용자가 추가한 분류도 포함."""
+        cats = load_settings().get("cal_cats")
+        if not isinstance(cats, list) or not cats:
+            cats = ["개인", "회사"]
+        return cats
+
+    def cal_cat_add(self, name):
+        """일정 분류를 추가하고 갱신된 목록을 반환한다."""
+        name = (name or "").strip()
+        cats = self.cal_cats()
+        if name and name not in cats:
+            cats = cats + [name]
+            save_settings({"cal_cats": cats})
+        return cats
+
+    def cal_cat_del(self, name):
+        """일정 분류를 삭제하고 갱신된 목록을 반환한다(최소 1개는 남긴다)."""
+        cats = [c for c in self.cal_cats() if c != name]
+        if not cats:
+            cats = ["개인"]
+        save_settings({"cal_cats": cats})
+        return cats
 
     def open_url(self, url):
         """링크를 시스템 기본 브라우저로 연다."""
@@ -4079,6 +4295,18 @@ class Api:
     def organize_folder_path(self, folder):
         """경로를 직접 받아 그 폴더를 종류별로 정리한다 (즐겨찾기에서 호출)."""
         return self._organize_into(folder)
+
+    def clean_folders(self):
+        """폴더 정리 모달에 보여줄 자주 쓰는 폴더 목록(존재하는 것만)."""
+        home = os.path.expanduser("~")
+        cand = [
+            ("🖥 바탕화면", os.path.join(home, "Desktop")),
+            ("⬇ 다운로드", os.path.join(home, "Downloads")),
+            ("📄 문서", os.path.join(home, "Documents")),
+            ("📥 받은파일", INBOX),
+            ("📤 결과물", OUT_DIR),
+        ]
+        return [{"label": l, "path": p} for l, p in cand if os.path.isdir(p)]
 
     def _organize_into(self, folder):
         if not folder or not os.path.isdir(folder):
@@ -4830,15 +5058,11 @@ class Api:
                 self._js(f"setQButtons({json.dumps(defaults, ensure_ascii=False)})")
         except Exception:
             pass
-        # 피카츄 캐릭터 — 기본 켜짐(처음엔 자동 등장). 사용자가 끄면 꺼진 상태 유지
+        # 피카츄 캐릭터 — 메인 창 밖 별도 위젯 창. 설정값을 메인 창의 토글 상태에 반영
+        # (실제 창 표시/숨김은 main() 에서 이미 처리됨).
         try:
             ps = load_settings()
-            if ps.get("pika", True):
-                self._js("pikaShow(true)")
-                if "pika_x" in ps and "pika_y" in ps:
-                    self._js(f"(function(){{var p=document.getElementById('pika');"
-                             f"p.style.right='auto';p.style.bottom='auto';"
-                             f"p.style.left={int(ps['pika_x'])}+'px';p.style.top={int(ps['pika_y'])}+'px';}})()")
+            self._js(f"window._pikaOn={json.dumps(bool(ps.get('pika', True)))}")
         except Exception:
             pass
         self._js(f"window._modelName={json.dumps(self._model or '')}")  # 응답 메타 표시용
@@ -5390,6 +5614,41 @@ def ensure_autostart(enable=True):
         log(f"autostart 설정 실패: {e}")
 
 
+class PikaApi:
+    """피카츄 외부 창 전용 작은 API (메인 창과 분리 — on_ready 중복 실행 방지)."""
+
+    def __init__(self, app):
+        self.app = app
+
+    def focus(self):
+        """피카츄를 클릭하면 메인 비서 창을 앞으로 띄우고 입력창에 포커스."""
+        try:
+            self.app._window.show()
+            try:
+                self.app._window.restore()
+            except Exception:
+                pass
+            self.app._js("(function(){var i=document.getElementById('inp');if(i)i.focus();})()")
+        except Exception:
+            pass
+        return "ok"
+
+    def hide(self):
+        """피카츄 위젯의 ✕ — 외부 창을 숨기고 설정을 끔(메인 토글도 동기화)."""
+        save_settings({"pika": False})
+        try:
+            if getattr(self.app, "_pika", None):
+                self.app._pika.hide()
+        except Exception:
+            pass
+        try:
+            self.app._js("window._pikaOn=false;"
+                         "var c=document.getElementById('set_pika');if(c)c.checked=false;")
+        except Exception:
+            pass
+        return "ok"
+
+
 TRAY = {"ok": False}      # 트레이가 떠 있으면 창 닫기 = 종료 대신 숨기기
 
 
@@ -5442,6 +5701,31 @@ if __name__ == "__main__":
     api._window = webview.create_window(
         "KJH비서", html=HTML, js_api=api,
         width=1180, height=820, min_size=(700, 560), background_color="#FAF9F5")
+
+    # 피카츄 떠다니는 외부 위젯 — 메인 창 밖, 항상 위, 처음엔 우측 하단. 드래그로 이동.
+    api._pika = None
+    try:
+        pw, ph = 170, 200
+        px, py = 1240, 560          # 화면 크기를 못 읽을 때의 기본 우측 하단값
+        try:
+            scr = webview.screens[0]
+            px = max(0, scr.width - pw - 24)
+            py = max(0, scr.height - ph - 70)   # 작업표시줄 위쪽
+        except Exception:
+            pass
+        api._pika = webview.create_window(
+            "피카츄", html=PIKA_HTML, js_api=PikaApi(api),
+            width=pw, height=ph, x=px, y=py,
+            frameless=True, easy_drag=True, on_top=True,
+            resizable=False, transparent=True, background_color="#FAF9F5")
+        # 설정에서 꺼져 있으면 시작 시 숨김
+        try:
+            if not load_settings().get("pika", True):
+                api._pika.hide()
+        except Exception:
+            pass
+    except Exception as e:
+        log(f"피카츄 창 생성 실패: {e}")
 
     def _on_closing():
         # 트레이가 살아 있으면 창만 숨기고 백그라운드로 상주 (트레이 아이콘으로 다시 연다)
