@@ -1,5 +1,5 @@
 {
-  "version": "KJH비서_1.0.0",
+  "version": "KJH비서_1.1.0",
   "download_url": "https://raw.githubusercontent.com/jackson990408-png/kjh-biseo/main/files/biseo.pyw",
-  "changelog": "최초 배포 — 한국어 프로그램 인식, 일정 관리, 이름 설정"
+  "changelog": "피카츄 캐릭터(이동 가능·표정 3종), 폴더 자동정리, 코워크 사원 모드, 업무 위임 버튼, 파일 요약·표 정리 강화"
 }
