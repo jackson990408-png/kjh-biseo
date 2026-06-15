@@ -50,7 +50,7 @@ INBOX = os.path.join(HOME, "받은파일")              # 사용자가 처리할
 HIST_VEC = os.path.join(HOME, "대화색인.json")       # 과거 대화 의미검색용 임베딩 캐시
 WORKFLOW = os.path.join(HOME, "워크플로우.json")      # 프로젝트·업무 진척도 보드
 
-VERSION = "KJH비서_1.3.1"   # 업데이트 시 이 값만 올리면 됨
+VERSION = "KJH비서_1.3.2"   # 업데이트 시 이 값만 올리면 됨
 # GitHub raw URL — version.json 위치. 빈 문자열이면 업데이트 체크 안 함.
 # 예) "https://raw.githubusercontent.com/내아이디/kjh-biseo/main/version.json"
 UPDATE_JSON_URL = "https://raw.githubusercontent.com/jackson990408-png/kjh-biseo/main/version.json"
@@ -2098,12 +2098,12 @@ footer{flex-shrink:0;padding:6px 24px 14px}
 .calbox{width:720px;max-width:94vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
 .calhead{display:flex;align-items:center;flex-wrap:wrap;gap:6px 6px;margin-bottom:10px}
 .calhead .cym{font-family:Georgia,'Malgun Gothic',serif;font-size:16px;font-weight:600;min-width:108px;text-align:center}
+.calhead .chttl{font-size:15px;font-weight:600;white-space:nowrap}
+.calhead .flex{flex:1}
+.memobox{width:480px;max-width:94vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
 .cnav{border:1px solid var(--line2);background:var(--white);border-radius:7px;min-width:26px;height:26px;
   cursor:pointer;color:var(--mut);font-size:14px;font-family:inherit}
 .cnav:hover{color:var(--accent);border-color:var(--accent)}
-.ctab{border:none;background:none;color:var(--mut);font-size:13px;cursor:pointer;padding:4px 10px;
-  border-radius:7px;font-family:inherit}
-.ctab.cur{background:var(--side);color:var(--txt);font-weight:600}
 #calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;user-select:none}
 .cdow{text-align:center;font-size:11px;color:var(--mut);padding:3px 0}
 .cdow.sun{color:#C0392B}
@@ -2132,11 +2132,15 @@ footer{flex-shrink:0;padding:6px 24px 14px}
 .cfbtn{border:1px solid var(--line2);background:var(--white);color:var(--mut);border-radius:6px;
   padding:2px 9px;font-size:11.5px;cursor:pointer;font-family:inherit;transition:.12s}
 .cfbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.addrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.addrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
 .addrow input,.addrow select{border:1px solid var(--line2);border-radius:8px;padding:7px 9px;
   font-size:13px;font-family:inherit;background:var(--bg);color:var(--txt);outline:none;margin:0;width:auto}
 .addrow input:focus{border-color:var(--accent)}
-#evtitle,#memotext{flex:1;min-width:0}
+#evtitle{flex:1 1 100%}
+#memotext{flex:1;min-width:0}
+#evtime{flex:0 0 auto}
+#evcat,#evremind{flex:1 1 120px;min-width:0}
+#evadd{flex:0 0 auto}
 .badd{border:none;background:var(--accent);color:#fff;border-radius:8px;padding:0 14px;
   cursor:pointer;font-size:13px;font-family:inherit}
 .badd:hover{background:var(--accent-h)}
@@ -2336,7 +2340,8 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
   <div class="side-top">
     <div class="brand"><span class="star">✱</span> KJH비서</div>
     <button id="newchat">✚ &nbsp;새 대화</button>
-    <button id="calbtn">📅 &nbsp;일정 · 메모</button>
+    <button id="calbtn">📅 &nbsp;일정</button>
+    <button id="memobtn">📝 &nbsp;메모</button>
     <button id="wfbtn">📋 &nbsp;워크플로우</button>
     <button id="featbtn">✨ &nbsp;할 수 있는 일</button>
     <button id="cleanbtn">🧹 &nbsp;폴더 정리</button>
@@ -2499,13 +2504,12 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
 </div></div>
 <div id="calmodal" class="overlay"><div class="box calbox">
   <div class="calhead">
+    <span class="chttl">📅 일정</span>
+    <span class="flex"></span>
     <button class="cnav" id="calprev">‹</button>
     <span class="cym" id="calym"></span>
     <button class="cnav" id="calnext">›</button>
     <button class="cnav" id="caltoday" title="오늘로">오늘</button>
-    <span class="flex"></span>
-    <button class="ctab cur" id="tabcal">📅 일정</button>
-    <button class="ctab" id="tabmemo">📝 메모</button>
     <button class="cnav" id="calclose" title="닫기">✕</button>
   </div>
   <div id="calpane">
@@ -2517,8 +2521,8 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
     </div>
     <div id="daylist"></div>
     <div class="addrow">
-      <input type="time" id="evtime" title="시간 (비우면 종일 일정)">
       <input id="evtitle" placeholder="일정 내용 — Enter로 추가">
+      <input type="time" id="evtime" title="시간 (비우면 종일 일정)">
       <select id="evcat" title="일정 구분">
         <option value="개인">👤 개인</option>
         <option value="회사">🏢 회사</option>
@@ -2535,12 +2539,17 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
       <button class="badd" id="evadd">추가</button>
     </div>
   </div>
-  <div id="memopane" style="display:none">
-    <div id="memolist"></div>
-    <div class="addrow">
-      <input id="memotext" placeholder="메모 입력 — Enter로 저장">
-      <button class="badd" id="memoadd">저장</button>
-    </div>
+</div></div>
+<div id="memomodal" class="overlay"><div class="box memobox">
+  <div class="calhead">
+    <span class="chttl">📝 메모</span>
+    <span class="flex"></span>
+    <button class="cnav" id="memoclose" title="닫기">✕</button>
+  </div>
+  <div id="memolist"></div>
+  <div class="addrow">
+    <input id="memotext" placeholder="메모 입력 — Enter로 저장">
+    <button class="badd" id="memoadd">저장</button>
   </div>
 </div></div>
 <div id="modal" class="overlay"><div class="box">
@@ -2864,10 +2873,10 @@ async function doSend(){
   inp.value='';inp.style.height='auto';
   if(t.startsWith('/금고')){await handleVault(t);return}
   if(t==='/일정'||t==='/달력'){openCal();return}
-  if(t==='/메모'){openCal().then(showMemoTab);return}
+  if(t==='/메모'){openMemo();return}
   if(t.startsWith('/메모 ')){userMsg(t);
     schedData=await pywebview.api.memo_add(t.slice(4).trim());
-    sysMsg('📝 메모 저장됨 — 📅 일정·메모 > 메모 탭에서 확인');return}
+    sysMsg('📝 메모 저장됨 — 왼쪽 📝 메모 버튼에서 확인');return}
   if(t==='/말투'){sysMsg('말투 사용법: /말투 간결 · /말투 표준 · /말투 자세히');return}
   if(t.startsWith('/말투 ')){userMsg(t);
     pywebview.api.set_style(t.slice(4).trim()).then(sysMsg);return}
@@ -3002,7 +3011,7 @@ async function openCal(){
 async function calRefresh(){
   if(calmodal.style.display!=='flex')return;
   schedData=await pywebview.api.sched_data();
-  renderCal();renderDay();renderMemos();
+  renderCal();renderDay();
 }
 function renderCal(){
   document.getElementById('calym').textContent=calY+'년 '+(calM+1)+'월';
@@ -3114,13 +3123,15 @@ async function addMemo(){
   schedData=await pywebview.api.memo_add(t);
   document.getElementById('memotext').value='';renderMemos();
 }
-function showMemoTab(){
-  document.getElementById('calpane').style.display='none';
-  document.getElementById('memopane').style.display='block';
-  document.getElementById('tabmemo').classList.add('cur');
-  document.getElementById('tabcal').classList.remove('cur');
+const memomodal=document.getElementById('memomodal');
+async function openMemo(){
+  memomodal.style.display='flex';
+  schedData=await pywebview.api.sched_data();
+  renderMemos();
+  document.getElementById('memotext').focus();
 }
 document.getElementById('calbtn').onclick=openCal;
+document.getElementById('memobtn').onclick=openMemo;
 /* ---------- 기능 대시보드 (할 수 있는 일) ---------- */
 const FEATURES=[
   {icon:'📁',title:'파일 · 문서',items:[
@@ -3195,16 +3206,13 @@ document.getElementById('caltoday').onclick=function(){
   const n=new Date();calY=n.getFullYear();calM=n.getMonth();selDate=todayStr();renderCal();renderDay()};
 document.getElementById('calprev').onclick=function(){calM--;if(calM<0){calM=11;calY--}renderCal()};
 document.getElementById('calnext').onclick=function(){calM++;if(calM>11){calM=0;calY++}renderCal()};
-document.getElementById('tabcal').onclick=function(){
-  document.getElementById('calpane').style.display='block';
-  document.getElementById('memopane').style.display='none';
-  this.classList.add('cur');document.getElementById('tabmemo').classList.remove('cur')};
-document.getElementById('tabmemo').onclick=showMemoTab;
 document.getElementById('evadd').onclick=addEvent;
 document.getElementById('evtitle').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing)addEvent()});
+document.getElementById('memoclose').onclick=function(){memomodal.style.display='none'};
 document.getElementById('memoadd').onclick=addMemo;
 document.getElementById('memotext').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing)addMemo()});
 calmodal.addEventListener('click',function(e){if(e.target===calmodal)calmodal.style.display='none'});
+memomodal.addEventListener('click',function(e){if(e.target===memomodal)memomodal.style.display='none'});
 /* ---------- 이름 설정 모달 ---------- */
 function openNameModal(){
   pywebview.api.get_name().then(function(n){
