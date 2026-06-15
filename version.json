@@ -1,5 +1,5 @@
 {
-  "version": "KJH비서_1.3.1",
+  "version": "KJH비서_1.3.2",
   "download_url": "https://raw.githubusercontent.com/jackson990408-png/kjh-biseo/main/files/biseo.pyw",
-  "changelog": "일정·메모 창 폭 확대(720px)·버튼 줄바꿈으로 잘림 해결, 워크플로우 상시 사이드 패널, 쇼핑·주문 자동화 흐름, 첨부 이미지·DXF 도면 썸네일 미리보기"
+  "changelog": "일정·메모 창 분리 — 일정은 📅, 메모는 📝 별도 창으로. 일정 추가줄에서 알림(몇분 전) 선택이 잘리던 문제 해결(입력칸 한 줄·옵션 줄바꿈), 상단 일정/메모 글자 세로로 깨지던 현상 제거"
 }
