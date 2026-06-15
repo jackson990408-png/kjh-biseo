@@ -50,7 +50,7 @@ INBOX = os.path.join(HOME, "받은파일")              # 사용자가 처리할
 HIST_VEC = os.path.join(HOME, "대화색인.json")       # 과거 대화 의미검색용 임베딩 캐시
 WORKFLOW = os.path.join(HOME, "워크플로우.json")      # 프로젝트·업무 진척도 보드
 
-VERSION = "KJH비서_1.2.0"   # 업데이트 시 이 값만 올리면 됨
+VERSION = "KJH비서_1.3.0"   # 업데이트 시 이 값만 올리면 됨
 # GitHub raw URL — version.json 위치. 빈 문자열이면 업데이트 체크 안 함.
 # 예) "https://raw.githubusercontent.com/내아이디/kjh-biseo/main/version.json"
 UPDATE_JSON_URL = "https://raw.githubusercontent.com/jackson990408-png/kjh-biseo/main/version.json"
@@ -674,6 +674,20 @@ def build_system():
         "④ 무엇을 했고 사용자가 다음에 뭘 고르면 되는지 한 줄로 안내\n"
         "날짜·인원·예산처럼 꼭 필요한 정보가 빠졌으면, 할 수 있는 데까지 실행한 뒤 "
         "한 번에 모아서 물어라.\n"
+        "\n=== 쇼핑·주문 흐름 (대표님이 '○○ 주문해줘 / 사줘 / 장바구니에 담아줘') ===\n"
+        "추측으로 끝내지 말고 아래 순서대로 실제로 진행한다:\n"
+        "① 먼저 ```web 로 제품·가격·평점을 조사해 후보 2~3개를 표(제품·가격·핵심사양·평점)로 정리한다.\n"
+        "② 대표님이 살 만한 1순위를 근거와 함께 추천한다.\n"
+        "③ 해당 제품 검색 페이지를 ```open 으로 브라우저에 띄운다. 쇼핑몰별 검색 URL:\n"
+        "   · 쿠팡  https://www.coupang.com/np/search?q=검색어\n"
+        "   · 네이버쇼핑  https://search.shopping.naver.com/search/all?query=검색어\n"
+        "   · 11번가  https://search.11st.co.kr/Search.tmall?kwd=검색어\n"
+        "   · 지마켓  https://browse.gmarket.co.kr/search?keyword=검색어\n"
+        "   (대표님이 특정 몰을 말하지 않으면 쿠팡을 기본으로 연다.)\n"
+        "④ 제품 페이지에서 장바구니 담기까지는 ```auto 로 진행해도 된다. "
+        "다만 **결제·주문 확정 버튼은 절대 자동으로 누르지 마라.** 수량·옵션·배송지·총액을 한 줄로 "
+        "요약해 보여주고 '이대로 결제할까요?'라고 반드시 한 번 확인받은 뒤, 대표님이 승인하면 진행한다.\n"
+        "⑤ 자주 사는 물건이면 워크플로우(```work)나 메모(```plan)에 기록해 다음에 더 빨리 처리한다.\n"
         "\n=== 보안 ===\n"
         "- 비밀번호·계좌·주민번호 등 민감정보는 절대 따라 말하지 말고 '/금고' 사용을 권하라.\n"
         "\n=== 학습 ===\n"
@@ -2057,8 +2071,10 @@ footer{flex-shrink:0;padding:6px 24px 14px}
   padding:5px 13px;font-size:12.5px;cursor:pointer;font-family:inherit}
 .qadd:hover{color:var(--accent);border-color:var(--accent)}
 #attach-bar{font-size:12px;color:var(--mut);padding:0 2px 6px;display:none}
-.filechip{display:inline-block;background:var(--side);border:1px solid var(--line);
+.filechip{display:inline-flex;align-items:center;gap:5px;background:var(--side);border:1px solid var(--line);
   border-radius:8px;padding:2px 9px;font-size:11.5px;margin:2px 4px 0 0}
+.filechip img.thumb{width:34px;height:34px;object-fit:cover;border-radius:5px;
+  border:1px solid var(--line);background:#fff;vertical-align:middle}
 #inputbox{background:var(--white);border:1px solid var(--line2);border-radius:16px;
   box-shadow:0 2px 10px rgba(61,57,41,.06);padding:10px 12px 8px;transition:border .15s}
 #inputbox:focus-within{border-color:#C9C2AE;box-shadow:0 2px 14px rgba(61,57,41,.1)}
@@ -2286,6 +2302,34 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
 .wfaddtask:hover{border-color:var(--accent);color:var(--accent)}
 .wfempty{color:var(--mut);font-size:13px;text-align:center;padding:40px 20px;width:100%}
 .wfpgroup{min-width:300px;max-width:340px}
+
+/* ---------- 워크플로우 상시 사이드 패널(우측 레일) ---------- */
+#wfrail{width:236px;min-width:236px;background:var(--side);border-left:1px solid var(--line);
+  display:flex;flex-direction:column;transition:margin .2s}
+#wfrail.hidden{margin-right:-238px}
+.wfrhead{display:flex;align-items:center;gap:6px;padding:12px 12px 8px;border-bottom:1px solid var(--line)}
+.wfrhead b{flex:1;font-size:13px;color:var(--txt)}
+.wfrhead button{border:none;background:transparent;cursor:pointer;color:var(--mut);font-size:13px;
+  width:24px;height:24px;border-radius:6px}
+.wfrhead button:hover{background:var(--bg);color:var(--txt)}
+#wfrbody{flex:1;overflow-y:auto;padding:10px}
+.wfrproj{margin-bottom:14px}
+.wfrproj .wfrname{font-size:12.5px;font-weight:600;color:var(--txt);display:flex;align-items:center;gap:5px;margin-bottom:5px}
+.wfrproj .wfrname i{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.wfrbar{height:5px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:3px}
+.wfrbar>span{display:block;height:100%;border-radius:3px;transition:.3s}
+.wfrpct{font-size:10px;color:var(--mut);margin-bottom:6px}
+.wfrtask{font-size:11.5px;color:var(--txt);padding:4px 6px;border-radius:6px;cursor:pointer;
+  border-left:3px solid #9aa0aa;background:var(--bg);margin-bottom:4px;line-height:1.3}
+.wfrtask.pri-높음{border-left-color:#e8473f}
+.wfrtask.pri-보통{border-left-color:#f0993e}
+.wfrtask.pri-낮음{border-left-color:#9aa0aa}
+.wfrtask.doing{font-weight:600}
+.wfrtask:hover{background:var(--line)}
+.wfrempty{font-size:11.5px;color:var(--mut);text-align:center;padding:24px 8px;line-height:1.5}
+#wfrtab{position:fixed;right:0;top:90px;z-index:60;background:var(--accent);color:#fff;border:none;
+  border-radius:9px 0 0 9px;padding:9px 7px;cursor:pointer;font-size:14px;display:none;
+  box-shadow:-2px 2px 8px rgba(0,0,0,.15);writing-mode:vertical-rl}
 </style></head>
 <body>
 <aside id="side">
@@ -2296,6 +2340,7 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
     <button id="wfbtn">📋 &nbsp;워크플로우</button>
     <button id="featbtn">✨ &nbsp;할 수 있는 일</button>
     <button id="cleanbtn">🧹 &nbsp;폴더 정리</button>
+    <button id="shopbtn">🛒 &nbsp;쇼핑·주문</button>
     <button id="namebtn">⚙ &nbsp;비서 이름 설정</button>
   </div>
   <div class="side-label">최근 대화</div>
@@ -2350,6 +2395,15 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
     <div class="disclaim">로컬 AI · 무료 · 컴퓨터 전체 파일 이해 · 모든 작업 자동 실행(프리패스)</div>
   </div></footer>
 </main>
+<aside id="wfrail" class="hidden">
+  <div class="wfrhead">
+    <b>📋 워크플로우</b>
+    <button id="wfropen" title="크게 보기/편집">⤢</button>
+    <button id="wfrhide" title="패널 접기">✕</button>
+  </div>
+  <div id="wfrbody"></div>
+</aside>
+<button id="wfrtab" title="워크플로우 패널 열기">📋</button>
 
 <div id="pika" class="st-idle" title="드래그해서 옮길 수 있어요">
   <div class="bubble" id="pbubble"></div>
@@ -2756,13 +2810,24 @@ function showAttached(names){
   if(!attached.length){attachBar.style.display='none';return}
   attachBar.style.display='block';
   attached.forEach(function(n,i){
-    const c=document.createElement('span');c.className='filechip';
-    c.textContent='📎 '+n;
+    const c=document.createElement('span');c.className='filechip';c.dataset.idx=i;
+    c.appendChild(document.createTextNode('📎 '+n));
     const x=document.createElement('span');x.textContent=' ✕';x.title='이 첨부 빼기';
     x.style.cssText='cursor:pointer;color:#C0392B;font-weight:bold';
     x.onclick=function(){pywebview.api.remove_attached(i).then(showAttached)};
     c.appendChild(x);attachBar.appendChild(c);
   });
+  /* 이미지·DXF 썸네일을 비동기로 채워 칩 앞에 붙인다 */
+  pywebview.api.attach_thumbs().then(function(urls){
+    if(!urls)return;
+    urls.forEach(function(u,i){
+      if(!u)return;
+      const c=attachBar.querySelector('.filechip[data-idx="'+i+'"]');
+      if(!c||c.querySelector('img.thumb'))return;
+      const im=document.createElement('img');im.className='thumb';im.src=u;
+      im.title='미리보기';c.insertBefore(im,c.firstChild);
+    });
+  }).catch(function(){});
 }
 // 답변 중에도 다음 채팅 입력 가능(큐로 순서 처리). 버튼은 생성 중 ⏹(중단)으로 바뀐다.
 let busy=false;
@@ -3378,7 +3443,47 @@ document.getElementById('wf_addproj').onclick=async function(){
   var folder='';if(link){folder=await pywebview.api.wf_pick_folder();}
   wfData=await pywebview.api.wf_add_project(name,null,folder);renderWf();};
 window._wfRefresh=async function(){wfData=await pywebview.api.wf_data();
-  if(document.getElementById('wfmodal').style.display==='flex')renderWf();};
+  if(document.getElementById('wfmodal').style.display==='flex')renderWf();renderRail();};
+
+/* 우측 상시 패널 */
+function _priColor(p){return p==='높음'?'#e8473f':p==='보통'?'#f0993e':'#9aa0aa'}
+function renderRail(){
+  var body=document.getElementById('wfrbody');if(!body)return;body.innerHTML='';
+  var projs=(wfData.projects||[]);
+  if(!projs.length){body.innerHTML='<div class="wfrempty">진행 중인 프로젝트가 없습니다.<br>채팅에 "○○ 프로젝트 만들어줘"라고 하거나 ⤢ 로 추가하세요.</div>';return;}
+  projs.forEach(function(p){
+    var pr=_projProgress(p);
+    var box=document.createElement('div');box.className='wfrproj';
+    var nm=document.createElement('div');nm.className='wfrname';
+    nm.innerHTML='<i style="background:'+(p.color||'#5B6CFF')+'"></i>'+p.name;
+    var bar=document.createElement('div');bar.className='wfrbar';
+    var sp=document.createElement('span');sp.style.width=pr.pct+'%';sp.style.background=p.color||'#5B6CFF';bar.appendChild(sp);
+    var pct=document.createElement('div');pct.className='wfrpct';
+    pct.textContent=pr.done+'/'+pr.total+' ('+pr.pct+'%)'+(p.file_count!=null?' · 파일 '+p.file_count:'');
+    box.appendChild(nm);box.appendChild(bar);box.appendChild(pct);
+    var order={'높음':0,'보통':1,'낮음':2};
+    var open=(p.tasks||[]).filter(function(t){return t.status!=='done'})
+      .sort(function(a,b){return (order[a.priority]||1)-(order[b.priority]||1)}).slice(0,4);
+    open.forEach(function(t){
+      var el=document.createElement('div');el.className='wfrtask pri-'+(t.priority||'보통')+(t.status==='doing'?' doing':'');
+      el.textContent=(t.status==='doing'?'▶ ':'')+t.title;el.title='클릭: 진행상태 변경';
+      el.onclick=async function(){var ni=(STAT.indexOf(t.status||'todo')+1)%3;
+        wfData=await pywebview.api.wf_set_task(p.id,t.id,{status:STAT[ni]});
+        if(STAT[ni]==='done'&&window._pikaDone)window._pikaDone();
+        if(document.getElementById('wfmodal').style.display==='flex')renderWf();renderRail();};
+      box.appendChild(el);
+    });
+    body.appendChild(box);
+  });
+}
+function showRail(on){
+  document.getElementById('wfrail').classList.toggle('hidden',!on);
+  document.getElementById('wfrtab').style.display=on?'none':'block';
+  pywebview.api.save_wf_rail(on);
+}
+document.getElementById('wfrhide').onclick=function(){showRail(false)};
+document.getElementById('wfrtab').onclick=function(){showRail(true);window._wfRefresh()};
+document.getElementById('wfropen').onclick=openWf;
 
 /* ── 폴더 정리 ── */
 document.getElementById('cleanbtn').onclick=async function(){
@@ -3387,6 +3492,16 @@ document.getElementById('cleanbtn').onclick=async function(){
   const r=await pywebview.api.organize_folder();
   setStatus('● '+(window._modelName||''),'ok');
   if(r){aiMsg(r);if(window._pikaDone)window._pikaDone();}
+};
+
+/* ── 쇼핑·주문 ── */
+document.getElementById('shopbtn').onclick=async function(){
+  const q=await askInput('무엇을 주문·구매할까요?','예: 인체공학 사무용 의자 10만원대');
+  if(!q||!q.trim())return;
+  inp.value='다음 물건을 쇼핑해줘: '+q.trim()+
+    '\n\n①가격·평점 조사해서 후보 2~3개를 표로 정리하고 ②1순위 추천 ③쿠팡 검색 페이지 열어줘. '+
+    '결제 확정은 내 확인 받고 진행해.';
+  doSend();
 };
 
 /* ── 응답 시간·모델 표시 ── */
@@ -3732,6 +3847,10 @@ class Api:
 
     def save_pika_pos(self, x, y):
         save_settings({"pika_x": int(x), "pika_y": int(y)})
+        return "ok"
+
+    def save_wf_rail(self, on):
+        save_settings({"wf_rail": bool(on)})
         return "ok"
 
     def open_url(self, url):
@@ -4162,6 +4281,67 @@ class Api:
     def get_attached_paths(self):
         """현재 첨부 파일의 전체 경로 목록 반환 (doSend 호출 전 JS에서 가져감)"""
         return list(self._attached)
+
+    def attach_thumbs(self):
+        """첨부 파일들의 작은 미리보기(이미지·DXF 도면)를 data URL 목록으로 반환.
+        _attached 순서와 1:1 정렬. 미리보기 불가하면 빈 문자열."""
+        if not hasattr(self, "_thumb_cache"):
+            self._thumb_cache = {}
+        out = []
+        for p in list(self._attached):
+            key = p + "|" + str(os.path.getmtime(p) if os.path.exists(p) else 0)
+            if key in self._thumb_cache:
+                out.append(self._thumb_cache[key])
+                continue
+            url = ""
+            try:
+                ext = os.path.splitext(p)[1].lower()
+                if ext in (".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".tiff"):
+                    url = self._img_thumb(p)
+                elif ext in (".dxf", ".dwg"):
+                    url = self._dxf_thumb(p)
+            except Exception as e:
+                log(f"썸네일 실패 {os.path.basename(p)}: {e}")
+            self._thumb_cache[key] = url
+            out.append(url)
+        return out
+
+    def _img_thumb(self, path):
+        from PIL import Image
+        import io
+        im = Image.open(path)
+        im = im.convert("RGB")
+        im.thumbnail((96, 96))
+        buf = io.BytesIO()
+        im.save(buf, format="JPEG", quality=70)
+        return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+
+    def _dxf_thumb(self, path):
+        """DXF 도면을 작은 PNG 미리보기로 렌더(베스트에포트)."""
+        if path.lower().endswith(".dwg"):
+            return ""   # DWG는 직접 렌더 불가
+        import ezdxf
+        from ezdxf.addons.drawing import RenderContext, Frontend
+        from ezdxf.addons.drawing.matplotlib import MatplotlibBackend
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import io
+        doc = ezdxf.readfile(path)
+        msp = doc.modelspace()
+        fig = plt.figure(figsize=(1.4, 1.4), dpi=70)
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.set_axis_off()
+        try:
+            Frontend(RenderContext(doc), MatplotlibBackend(ax)).draw_layout(msp, finalize=True)
+        except Exception:
+            plt.close(fig)
+            return ""
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", facecolor="white",
+                    bbox_inches="tight", pad_inches=0.05)
+        plt.close(fig)
+        return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
     def reattach_files(self, paths):
         """경로 목록을 _attached에 다시 추가 (파일 재첨부 버튼)"""
@@ -4597,6 +4777,9 @@ class Api:
             if _s2.get("tts_rate"):
                 self._js(f"window._ttsRate={float(_s2['tts_rate'])};"
                          f"if(typeof _setRate!=='undefined')_setRate={float(_s2['tts_rate'])}")
+            if _s2.get("wf_rail"):   # 상시 워크플로우 패널 — 켜져 있으면 부팅 시 표시·채움
+                self._js("if(typeof showRail!=='undefined'){showRail(true);"
+                         "if(window._wfRefresh)window._wfRefresh();}")
         except Exception:
             pass
         # 모델 예열 — 실제 시스템 프롬프트까지 미리 처리해 프리픽스 캐시를 채운다
