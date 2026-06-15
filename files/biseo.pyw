@@ -50,7 +50,7 @@ INBOX = os.path.join(HOME, "받은파일")              # 사용자가 처리할
 HIST_VEC = os.path.join(HOME, "대화색인.json")       # 과거 대화 의미검색용 임베딩 캐시
 WORKFLOW = os.path.join(HOME, "워크플로우.json")      # 프로젝트·업무 진척도 보드
 
-VERSION = "KJH비서_1.3.0"   # 업데이트 시 이 값만 올리면 됨
+VERSION = "KJH비서_1.3.1"   # 업데이트 시 이 값만 올리면 됨
 # GitHub raw URL — version.json 위치. 빈 문자열이면 업데이트 체크 안 함.
 # 예) "https://raw.githubusercontent.com/내아이디/kjh-biseo/main/version.json"
 UPDATE_JSON_URL = "https://raw.githubusercontent.com/jackson990408-png/kjh-biseo/main/version.json"
@@ -2095,8 +2095,8 @@ footer{flex-shrink:0;padding:6px 24px 14px}
 .disclaim{text-align:center;font-size:11px;color:#B5AF9C;padding-top:8px}
 
 /* ---------- 일정 · 메모 (달력) ---------- */
-.calbox{width:620px;max-width:94vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
-.calhead{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.calbox{width:720px;max-width:94vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.calhead{display:flex;align-items:center;flex-wrap:wrap;gap:6px 6px;margin-bottom:10px}
 .calhead .cym{font-family:Georgia,'Malgun Gothic',serif;font-size:16px;font-weight:600;min-width:108px;text-align:center}
 .cnav{border:1px solid var(--line2);background:var(--white);border-radius:7px;min-width:26px;height:26px;
   cursor:pointer;color:var(--mut);font-size:14px;font-family:inherit}
@@ -2132,7 +2132,7 @@ footer{flex-shrink:0;padding:6px 24px 14px}
 .cfbtn{border:1px solid var(--line2);background:var(--white);color:var(--mut);border-radius:6px;
   padding:2px 9px;font-size:11.5px;cursor:pointer;font-family:inherit;transition:.12s}
 .cfbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.addrow{display:flex;gap:6px;margin-top:10px}
+.addrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .addrow input,.addrow select{border:1px solid var(--line2);border-radius:8px;padding:7px 9px;
   font-size:13px;font-family:inherit;background:var(--bg);color:var(--txt);outline:none;margin:0;width:auto}
 .addrow input:focus{border-color:var(--accent)}
