@@ -1,5 +1,5 @@
 {
-  "version": "KJH비서_1.3.2",
+  "version": "KJH비서_1.3.3",
   "download_url": "https://raw.githubusercontent.com/jackson990408-png/kjh-biseo/main/files/biseo.pyw",
-  "changelog": "일정·메모 창 분리 — 일정은 📅, 메모는 📝 별도 창으로. 일정 추가줄에서 알림(몇분 전) 선택이 잘리던 문제 해결(입력칸 한 줄·옵션 줄바꿈), 상단 일정/메모 글자 세로로 깨지던 현상 제거"
+  "changelog": "배포 준비 — AI 엔진(Ollama) 미설치 시 '재시작' 대신 설치 안내·다운로드 페이지 자동 열기, 최초 실행 시 바탕화면·시작메뉴 바로가기 자동 생성(한글 경로 인코딩 문제 우회), 개인용 쇼핑몰 관리자 주소 제거, 설치 프로그램에 matplotlib·comtypes 추가"
 }
