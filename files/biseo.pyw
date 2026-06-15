@@ -50,7 +50,7 @@ INBOX = os.path.join(HOME, "받은파일")              # 사용자가 처리할
 HIST_VEC = os.path.join(HOME, "대화색인.json")       # 과거 대화 의미검색용 임베딩 캐시
 WORKFLOW = os.path.join(HOME, "워크플로우.json")      # 프로젝트·업무 진척도 보드
 
-VERSION = "KJH비서_1.3.2"   # 업데이트 시 이 값만 올리면 됨
+VERSION = "KJH비서_1.3.3"   # 업데이트 시 이 값만 올리면 됨
 # GitHub raw URL — version.json 위치. 빈 문자열이면 업데이트 체크 안 함.
 # 예) "https://raw.githubusercontent.com/내아이디/kjh-biseo/main/version.json"
 UPDATE_JSON_URL = "https://raw.githubusercontent.com/jackson990408-png/kjh-biseo/main/version.json"
@@ -432,8 +432,7 @@ SITES = {
     "구글드라이브": "https://drive.google.com", "드라이브": "https://drive.google.com",
     "제미나이": "https://gemini.google.com", "지메일": "https://mail.google.com",
     "유튜브": "https://www.youtube.com", "네이버": "https://www.naver.com",
-    "클로드": "https://claude.ai", "쇼핑몰": "https://choice-appear-brand.vercel.app",
-    "쇼핑몰관리자": "https://choice-appear-brand.vercel.app/admin.html",
+    "클로드": "https://claude.ai",
     "구글": "https://www.google.com", "쿠팡": "https://www.coupang.com",
     "넷플릭스": "https://www.netflix.com", "인스타": "https://www.instagram.com",
     "인스타그램": "https://www.instagram.com", "페이스북": "https://www.facebook.com",
@@ -3683,6 +3682,56 @@ class Api:
         except Exception:
             pass
 
+    def _ensure_shortcut(self):
+        """바탕화면·시작메뉴 바로가기가 없으면 자동 생성한다(설치 프로그램의 보강책).
+        설치 .bat 의 PowerShell 바로가기 단계는 한글 경로(AI비서)가 cmd→PS 로 넘어가며
+        cp949 로 깨질 수 있어 일부 PC에서 실패한다. 이 메서드는 Python(UTF-8)에서 직접
+        만들어 그 문제를 피한다.
+        - 설치 위치(HOME)에서 실행될 때만 동작(개발본 실행 시엔 건드리지 않음).
+        - 바탕화면에 이미 아이콘이 있으면 만들지 않음(중복 방지).
+        - 한 번 처리하면 플래그로 재실행 안 함(사용자가 지워도 다시 안 만듦)."""
+        try:
+            script = os.path.abspath(sys.argv[0])
+            if os.path.dirname(script).lower() != HOME.lower():
+                return
+            if load_settings().get("shortcut_made"):
+                return
+            desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+            # 설치본(KJH비서.lnk)·기존 사용본(AI 비서.lnk) 중 하나라도 있으면 중복 생성 안 함
+            if any(os.path.exists(os.path.join(desktop, n))
+                   for n in ("KJH비서.lnk", "AI 비서.lnk")):
+                save_settings({"shortcut_made": True})
+                return
+            pyw = sys.executable
+            if pyw.lower().endswith("python.exe"):
+                cand = os.path.join(os.path.dirname(pyw), "pythonw.exe")
+                if os.path.exists(cand):
+                    pyw = cand
+            ico = os.path.join(HOME, "비서.ico")
+            import win32com.client
+            ws = win32com.client.Dispatch("WScript.Shell")
+            targets = [os.path.join(desktop, "KJH비서.lnk")]
+            appdata = os.environ.get("APPDATA")
+            if appdata:
+                targets.append(os.path.join(
+                    appdata, r"Microsoft\Windows\Start Menu\Programs", "KJH비서.lnk"))
+            for lnk in targets:
+                try:
+                    sc = ws.CreateShortcut(lnk)
+                    sc.TargetPath = pyw
+                    sc.Arguments = f'"{script}"'
+                    sc.WorkingDirectory = HOME
+                    if os.path.exists(ico):
+                        sc.IconLocation = ico + ",0"
+                    sc.Hotkey = "CTRL+ALT+K"
+                    sc.Description = "KJH비서 — 무료 로컬 AI 비서 (어디서든 Ctrl+Alt+K)"
+                    sc.Save()
+                except Exception:
+                    pass
+            save_settings({"shortcut_made": True})
+        except Exception as e:
+            log(f"바로가기 생성 건너뜀: {e}")
+
     def _sysmsg(self, t):
         self._js(f"sysMsg({json.dumps(t)})")
 
@@ -4678,6 +4727,7 @@ class Api:
         # 일정 알림은 AI 엔진과 무관하게 항상 동작
         threading.Thread(target=self._reminder_worker, daemon=True).start()
         threading.Thread(target=self._self_diagnose, daemon=True).start()  # 라이브러리 자가진단
+        threading.Thread(target=self._ensure_shortcut, daemon=True).start()  # 최초 1회 바로가기 자동 생성
         try:   # 오늘 일정 브리핑 — 켜자마자 한눈에
             today = time.strftime("%Y-%m-%d")
             evs = sorted([e for e in sched_load()["events"]
@@ -4711,8 +4761,20 @@ class Api:
         except Exception:
             pass
         if not self._ping():
-            self._status("AI 엔진 시작 중…")
             exe = os.path.expandvars(r"%LOCALAPPDATA%\Programs\Ollama\ollama.exe")
+            installed = os.path.exists(exe) or shutil.which("ollama")
+            if not installed:
+                # 최초 사용자: Ollama가 아예 안 깔린 경우 — 재시작이 아니라 '설치'가 필요하다.
+                self._status("AI 엔진(Ollama) 설치 필요", "err")
+                self._sysmsg("⚙️ 이 비서는 무료 AI 엔진 ‘Ollama’가 있어야 작동합니다.\n"
+                             "설치 페이지를 열어드릴게요. 설치를 마친 뒤 이 창을 다시 켜면 자동으로 연결됩니다.\n"
+                             "👉 https://ollama.com/download")
+                try:
+                    webbrowser.open("https://ollama.com/download")
+                except Exception:
+                    pass
+                return
+            self._status("AI 엔진 시작 중…")
             try:
                 subprocess.Popen([exe if os.path.exists(exe) else "ollama", "serve"],
                                  creationflags=0x08000000)
@@ -4724,7 +4786,8 @@ class Api:
                     break
         if not self._ping():
             self._status("엔진 연결 실패", "err")
-            self._sysmsg("Ollama가 실행되지 않았습니다. 컴퓨터 재시작 후 다시 열어주세요.")
+            self._sysmsg("AI 엔진(Ollama) 연결에 실패했습니다. 컴퓨터를 재시작한 뒤 다시 열어 주세요.\n"
+                         "그래도 안 되면 작업표시줄 오른쪽 아래에 Ollama 아이콘(라마 모양)이 떠 있는지 확인해 주세요.")
             return
         pruned = prune_history()
         if pruned:
