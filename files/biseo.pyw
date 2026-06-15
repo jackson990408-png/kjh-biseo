@@ -4501,6 +4501,27 @@ class Api:
                                           for e in evs))
         except Exception:
             pass
+        try:   # 워크플로우 브리핑 — 진행중·높은 중요도 업무를 켜자마자 보여준다
+            wf = wf_load()
+            doing, high = [], []
+            for p in wf.get("projects", []):
+                for t in p.get("tasks", []):
+                    if t.get("status") == "done":
+                        continue
+                    if t.get("status") == "doing":
+                        doing.append(f"{p['name']}: {t['title']}")
+                    if t.get("priority") == "높음":
+                        high.append(f"{p['name']}: {t['title']}")
+            parts = []
+            if doing:
+                parts.append("진행중 " + str(len(doing)) + "건 — " + " · ".join(doing[:3]))
+            if high:
+                parts.append("🔴 중요 " + str(len(high)) + "건 — " + " · ".join(high[:3]))
+            if parts:
+                self._sysmsg("📋 워크플로우 — " + " / ".join(parts)
+                             + "  (왼쪽 📋 워크플로우에서 전체 보기)")
+        except Exception:
+            pass
         if not self._ping():
             self._status("AI 엔진 시작 중…")
             exe = os.path.expandvars(r"%LOCALAPPDATA%\Programs\Ollama\ollama.exe")
