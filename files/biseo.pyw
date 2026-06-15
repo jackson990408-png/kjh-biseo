@@ -48,8 +48,9 @@ ERR_LOG = os.path.join(HOME, "오류.log")           # 전역 예외·디버그 
 EXEC_LOG = os.path.join(HOME, "실행로그.txt")       # 자동 실행한 코드 감사 로그
 INBOX = os.path.join(HOME, "받은파일")              # 사용자가 처리할 파일을 떨구는 폴더 (자동 감시)
 HIST_VEC = os.path.join(HOME, "대화색인.json")       # 과거 대화 의미검색용 임베딩 캐시
+WORKFLOW = os.path.join(HOME, "워크플로우.json")      # 프로젝트·업무 진척도 보드
 
-VERSION = "KJH비서_1.1.0"   # 업데이트 시 이 값만 올리면 됨
+VERSION = "KJH비서_1.2.0"   # 업데이트 시 이 값만 올리면 됨
 # GitHub raw URL — version.json 위치. 빈 문자열이면 업데이트 체크 안 함.
 # 예) "https://raw.githubusercontent.com/내아이디/kjh-biseo/main/version.json"
 UPDATE_JSON_URL = "https://raw.githubusercontent.com/jackson990408-png/kjh-biseo/main/version.json"
@@ -650,6 +651,13 @@ def build_system():
         "일정 수정 요청 시 — 아래 '다가오는 일정'의 id를 사용해:\n"
         "```plan\n종류: 수정\nid: 1749999999999\n날짜: 2026-06-20\n시간: 16:00\n제목: 변경된 제목\n카테고리: 개인\n알림: 30분 전\n```\n"
         "→ 시스템이 달력에 저장하고 알림을 자동 예약한다. 저장 후 다시 묻지 마라.\n"
+        "9. 워크플로우(업무 보드) 저장 — 대표님이 '프로젝트 만들어줘 / 업무 추가해줘 / 할 일 정리해줘'처럼 "
+        "진행할 일을 정리·관리해달라고 하면 보드에 등록한다:\n"
+        "```work\n종류: 업무\n프로젝트: 강남 카페 리노베이션\n업무: 평면도 수정, 자재 견적, 클라이언트 미팅\n중요도: 높음\n마감: 2026-06-20\n```\n"
+        "중요도는 높음/보통/낮음. 업무는 콤마로 여러 개 가능. 프로젝트명이 없으면 첫 프로젝트에 들어간다. "
+        "프로젝트만 만들려면 '종류: 프로젝트\\n프로젝트: 이름\\n폴더: C:\\\\경로(선택)'. "
+        "→ 시스템이 보드에 저장하고 왼쪽 📋 워크플로우에 바로 표시한다. 복잡한 일을 맡으면 먼저 이 블록으로 "
+        "업무를 쪼개 등록한 뒤 하나씩 처리하라.\n"
         + "\n=== 오늘 날짜: " + time.strftime("%Y-%m-%d") + f" ({kday(time.strftime('%Y-%m-%d'))}요일) ===\n"
         "=== 다가오는 일정 (2주) — '내 일정 뭐야' 질문에 이걸로 답하라 ===\n"
         + upcoming_summary() + "\n"
@@ -1617,6 +1625,58 @@ def toast(title, body):
         pass
 
 
+def handle_work_block(block):
+    """모델의 ```work``` 블록 → 워크플로우 보드에 프로젝트/업무 추가. 확인 문구 반환."""
+    kv = {}
+    for ln in block.strip().splitlines():
+        if ":" in ln:
+            k, v = ln.split(":", 1)
+            kv[k.strip().lstrip("-•· ")] = v.strip()
+    kind = kv.get("종류", "업무")
+    proj_name = kv.get("프로젝트", "").strip()
+    d = wf_load()
+    # 프로젝트 찾기/생성
+    proj = None
+    for p in d["projects"]:
+        if p["name"] == proj_name:
+            proj = p
+            break
+    if kind.startswith("프로젝트") or (proj is None and proj_name):
+        if proj is None:
+            colors = ["#5B6CFF", "#E8473F", "#27AE60", "#F0993E", "#8E44AD", "#16A0A0"]
+            proj = {"id": int(time.time() * 1000), "name": proj_name or "새 프로젝트",
+                    "color": colors[len(d["projects"]) % len(colors)],
+                    "folder": kv.get("폴더", ""), "tasks": []}
+            d["projects"].append(proj)
+        if kind.startswith("프로젝트") and "업무" not in kv:
+            wf_save(d)
+            return f"📋 프로젝트 **{proj['name']}** 을(를) 워크플로우에 만들었습니다."
+    if proj is None:
+        if not d["projects"]:
+            return "📋 먼저 프로젝트를 지정하세요 (work 블록에 '프로젝트: 이름')."
+        proj = d["projects"][0]
+    # 업무 추가 (여러 개면 콤마/줄바꿈 구분)
+    raw = kv.get("업무") or kv.get("제목") or kv.get("할일") or ""
+    pri = kv.get("중요도") or kv.get("우선순위") or "보통"
+    if "높" in pri or "high" in pri.lower() or "긴급" in pri:
+        pri = "높음"
+    elif "낮" in pri or "low" in pri.lower():
+        pri = "낮음"
+    else:
+        pri = "보통"
+    due = kv.get("마감") or kv.get("기한") or ""
+    titles = [t.strip() for t in re.split(r"[,\n]", raw) if t.strip()]
+    for tt in titles:
+        proj.setdefault("tasks", []).append({
+            "id": int(time.time() * 1000) + len(proj["tasks"]),
+            "title": tt, "status": "todo", "priority": pri, "due": due, "memo": ""})
+    wf_save(d)
+    if titles:
+        return (f"📋 **{proj['name']}** 에 업무 {len(titles)}건을 추가했습니다 "
+                f"(중요도: {pri}) — 왼쪽 📋 워크플로우에서 확인하세요.")
+    return "📋 워크플로우를 갱신했습니다."
+
+
 def handle_plan_block(block):
     """모델의 ```plan``` 블록 → 일정/메모 저장·수정. 확인 문구를 돌려준다"""
     kv = {}
@@ -2160,6 +2220,72 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
   cursor:pointer;opacity:0;transition:.15s;z-index:2}
 #pika:hover .pclose{opacity:1}
 #pika .pclose:hover{background:#e8473f;color:#fff;border-color:#e8473f}
+
+/* ---------- 설정 패널 ---------- */
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 2px;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--txt)}
+.setrow select{border:1px solid var(--line2);border-radius:8px;padding:5px 9px;font-family:inherit;
+  font-size:13px;background:var(--bg);color:var(--txt)}
+.setsec{font-size:13px;font-weight:700;margin:14px 0 8px;color:var(--txt)}
+.sw{position:relative;display:inline-block;width:42px;height:23px}
+.sw input{opacity:0;width:0;height:0}
+.sw .slider{position:absolute;inset:0;background:#ccc;border-radius:23px;transition:.2s;cursor:pointer}
+.sw .slider:before{content:"";position:absolute;height:17px;width:17px;left:3px;top:3px;background:#fff;
+  border-radius:50%;transition:.2s}
+.sw input:checked+.slider{background:var(--accent)}
+.sw input:checked+.slider:before{transform:translateX(19px)}
+.favitem{display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--line);
+  border-radius:8px;margin-bottom:6px;font-size:12px}
+.favitem .fpath{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--txt)}
+.favitem button{border:none;background:var(--side);border-radius:6px;padding:3px 8px;cursor:pointer;
+  font-size:11.5px;color:var(--txt);font-family:inherit}
+.favitem button:hover{background:var(--accent);color:#fff}
+.favitem .fdel:hover{background:#e8473f;color:#fff}
+
+/* ---------- 워크플로우 보드 ---------- */
+.wfbox{width:920px;max-width:95vw;height:84vh;display:flex;flex-direction:column;overflow:hidden;padding:18px}
+.wfhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.wfhead h3{margin:0}
+.wftoggle{display:flex;background:var(--side);border-radius:9px;padding:3px}
+.wftab{border:none;background:transparent;padding:6px 14px;border-radius:7px;cursor:pointer;
+  font-family:inherit;font-size:12.5px;color:var(--mut)}
+.wftab.on{background:var(--accent);color:#fff}
+.wfx{border:none;background:var(--side);width:30px;height:30px;border-radius:8px;cursor:pointer;
+  font-size:14px;color:var(--mut)}
+.wfx:hover{background:#e8473f;color:#fff}
+.wflegend{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--mut);
+  padding:6px 2px 12px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.wflegend .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.p-high{background:#e8473f}.p-mid{background:#f0993e}.p-low{background:#9aa0aa}
+.wfadd{border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:8px;
+  padding:5px 12px;cursor:pointer;font-family:inherit;font-size:12px}
+.wfadd:hover{background:var(--accent);color:#fff}
+.wfboard{flex:1;overflow:auto;display:flex;gap:14px;align-items:flex-start;padding-bottom:6px}
+.wfcol{min-width:260px;max-width:280px;flex:0 0 auto;background:var(--side);border-radius:12px;
+  padding:12px;border-top:4px solid var(--accent)}
+.wfcoltop{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.wfcoltop b{flex:1;font-size:13.5px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wfcoltop .wficon{cursor:pointer;font-size:12px;color:var(--mut);opacity:.6}
+.wfcoltop .wficon:hover{opacity:1}
+.wfbar{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin:6px 0 4px}
+.wfbar>i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:.3s}
+.wfprog{font-size:11px;color:var(--mut);margin-bottom:10px}
+.wftask{background:var(--bg);border:1px solid var(--line);border-left:4px solid #9aa0aa;border-radius:8px;
+  padding:8px 10px;margin-bottom:7px;font-size:12.5px;cursor:pointer;position:relative}
+.wftask.pri-높음{border-left-color:#e8473f}
+.wftask.pri-보통{border-left-color:#f0993e}
+.wftask.pri-낮음{border-left-color:#9aa0aa}
+.wftask.done{opacity:.5}
+.wftask.done .wtt{text-decoration:line-through}
+.wtt{color:var(--txt);line-height:1.35;padding-right:16px}
+.wtmeta{font-size:10.5px;color:var(--mut);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap}
+.wtx{position:absolute;top:6px;right:7px;font-size:11px;color:var(--mut);opacity:0;cursor:pointer}
+.wftask:hover .wtx{opacity:.7}.wtx:hover{color:#e8473f;opacity:1}
+.wfaddtask{width:100%;border:1px dashed var(--line2);background:transparent;border-radius:8px;
+  padding:7px;cursor:pointer;font-family:inherit;font-size:12px;color:var(--mut)}
+.wfaddtask:hover{border-color:var(--accent);color:var(--accent)}
+.wfempty{color:var(--mut);font-size:13px;text-align:center;padding:40px 20px;width:100%}
+.wfpgroup{min-width:300px;max-width:340px}
 </style></head>
 <body>
 <aside id="side">
@@ -2167,6 +2293,7 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
     <div class="brand"><span class="star">✱</span> KJH비서</div>
     <button id="newchat">✚ &nbsp;새 대화</button>
     <button id="calbtn">📅 &nbsp;일정 · 메모</button>
+    <button id="wfbtn">📋 &nbsp;워크플로우</button>
     <button id="featbtn">✨ &nbsp;할 수 있는 일</button>
     <button id="cleanbtn">🧹 &nbsp;폴더 정리</button>
     <button id="namebtn">⚙ &nbsp;비서 이름 설정</button>
@@ -2178,6 +2305,7 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
     <button class="fbtn" id="fplus" title="글씨 크게">A＋</button>
     <button class="fbtn" id="darkbtn" title="다크/라이트 모드">🌙</button>
     <button class="fbtn" id="exportbtn" title="현재 대화를 파일로 저장">⬇</button>
+    <button class="fbtn" id="setbtn" title="설정">⚙</button>
     <span id="status">부팅 중…</span>
   </div>
 </aside>
@@ -2210,6 +2338,7 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
       <textarea id="inp" rows="1" placeholder="무엇이든 물어보세요"></textarea>
       <div class="inrow">
         <button class="ibtn" id="attach" title="파일 첨부">＋</button>
+        <button class="ibtn" id="clip" title="복사한 내용 불러와 질문">📋</button>
         <button class="ibtn" id="capture" title="화면 캡처 후 자동 첨부">📷</button>
         <button class="ibtn" id="mic" title="음성으로 말하기">🎤</button>
         <button class="ibtn" id="tts" title="답변 음성으로 듣기 (켜기/끄기)">🔈</button>
@@ -2238,6 +2367,44 @@ body.dark #pika .bubble:after{border-top-color:#f4d03f}
 <div id="cmodal" class="overlay"><div class="box">
   <h3>확인</h3><p id="ctext"></p>
   <div class="brow"><button class="bcancel" id="ccancel">취소</button><button class="bok" id="cok">확인</button></div>
+</div></div>
+<div id="imodal" class="overlay"><div class="box">
+  <h3 id="ititle">입력</h3>
+  <input id="iinp" style="width:100%;border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;box-sizing:border-box;margin-bottom:6px">
+  <div class="brow"><button class="bcancel" id="icancel">취소</button><button class="bok" id="iok">확인</button></div>
+</div></div>
+<div id="setmodal" class="overlay"><div class="box" style="width:420px;max-width:92vw">
+  <h3>⚙ 설정</h3>
+  <div class="setrow"><span>🌙 다크 모드</span>
+    <label class="sw"><input type="checkbox" id="set_dark"><span class="slider"></span></label></div>
+  <div class="setrow"><span>✨ 피카츄 캐릭터</span>
+    <label class="sw"><input type="checkbox" id="set_pika"><span class="slider"></span></label></div>
+  <div class="setrow"><span>💬 답변 스타일</span>
+    <select id="set_style"><option value="간결">간결</option><option value="표준">표준</option><option value="자세히">자세히</option></select></div>
+  <div class="setrow"><span>🔊 음성 읽기 속도 <b id="set_rateval">1.05x</b></span>
+    <input type="range" id="set_rate" min="0.6" max="1.6" step="0.05" style="width:150px"></div>
+  <div class="setsec">📁 즐겨찾기 폴더 <span style="color:var(--mut);font-weight:400">— 자주 쓰는 작업 폴더</span></div>
+  <div id="favlist" style="max-height:160px;overflow-y:auto;margin-bottom:8px"></div>
+  <button id="set_addfav" class="bcancel" style="width:100%;padding:8px">＋ 폴더 추가</button>
+  <div class="brow"><button class="bok" id="setclose">닫기</button></div>
+</div></div>
+<div id="wfmodal" class="overlay"><div class="box wfbox">
+  <div class="wfhead">
+    <h3 style="flex:1">📋 워크플로우 <span style="font-size:12px;color:var(--mut);font-weight:400">— 프로젝트·업무 진척도</span></h3>
+    <div class="wftoggle">
+      <button class="wftab on" id="wf_byproj">프로젝트별</button>
+      <button class="wftab" id="wf_bypri">우선순위별</button>
+    </div>
+    <button class="wfx" id="wfclose">✕</button>
+  </div>
+  <div class="wflegend">
+    <span><i class="dot p-high"></i>높음</span>
+    <span><i class="dot p-mid"></i>보통</span>
+    <span><i class="dot p-low"></i>낮음</span>
+    <span style="flex:1"></span>
+    <button id="wf_addproj" class="wfadd">＋ 프로젝트</button>
+  </div>
+  <div id="wfboard" class="wfboard"></div>
 </div></div>
 <div id="qmodal" class="overlay"><div class="box">
   <h3>⚡ 빠른 버튼 만들기</h3>
@@ -2508,7 +2675,7 @@ function speak(raw){
   if(!s){maybeRelisten();return}
   try{speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(s.slice(0,600));
-    u.lang='ko-KR';u.rate=1.05;
+    u.lang='ko-KR';u.rate=window._ttsRate||1.05;
     const ko=speechSynthesis.getVoices().find(v=>/ko/i.test(v.lang));
     if(ko)u.voice=ko;
     u.onend=maybeRelisten;              // 다 읽고 나면 자동으로 다시 마이크 켜기
@@ -2562,6 +2729,17 @@ function askConfirm(msg){return new Promise(function(res){
   cmodal.style.display='flex';document.getElementById('ctext').textContent=msg;
   document.getElementById('cok').onclick=function(){cmodal.style.display='none';res(true)};
   document.getElementById('ccancel').onclick=function(){cmodal.style.display='none';res(false)};
+})}
+function askInput(title,placeholder){return new Promise(function(res){
+  var m=document.getElementById('imodal'),inpE=document.getElementById('iinp');
+  document.getElementById('ititle').textContent=title||'입력';
+  inpE.value='';inpE.placeholder=placeholder||'';m.style.display='flex';
+  setTimeout(function(){inpE.focus()},50);
+  function done(v){m.style.display='none';inpE.onkeydown=null;res(v)}
+  document.getElementById('iok').onclick=function(){done(inpE.value.trim()||null)};
+  document.getElementById('icancel').onclick=function(){done(null)};
+  inpE.onkeydown=function(e){if(e.key==='Enter')done(inpE.value.trim()||null);
+    else if(e.key==='Escape')done(null)};
 })}
 function askPass(){return new Promise(function(res){
   modal.style.display='flex';mpw.value='';mpw.focus();
@@ -3062,6 +3240,146 @@ document.getElementById('exportbtn').onclick=async function(){
   sysMsg(r);
 };
 
+/* ── 클립보드 빠른 질문 ── */
+document.getElementById('clip').onclick=async function(){
+  const t=await pywebview.api.read_clipboard();
+  if(!t||!t.trim()){sysMsg('📋 복사된 텍스트가 없습니다 — 먼저 내용을 복사(Ctrl+C)하세요');return}
+  inp.value='다음 복사한 내용을 읽고 핵심만 보기좋게 정리해줘:\n\n'+t.trim();
+  inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,170)+'px';inp.focus();
+};
+
+/* ── 통합 설정 패널 ── */
+var _setRate=1.05;
+async function renderFavs(){
+  const box=document.getElementById('favlist');box.innerHTML='';
+  const favs=await pywebview.api.fav_folders();
+  if(!favs.length){box.innerHTML='<div style="font-size:11.5px;color:var(--mut);padding:4px">등록된 폴더가 없습니다</div>';return}
+  favs.forEach(function(p){
+    const it=document.createElement('div');it.className='favitem';
+    const name=p.replace(/\\/g,'/').split('/').filter(Boolean).pop()||p;
+    const lbl=document.createElement('span');lbl.className='fpath';lbl.textContent='📂 '+name;lbl.title=p;
+    const ob=document.createElement('button');ob.textContent='열기';
+    ob.onclick=function(){pywebview.api.open_folder_path(p)};
+    const cb=document.createElement('button');cb.textContent='정리';cb.title='이 폴더 종류별 정리';
+    cb.onclick=async function(){const r=await pywebview.api.organize_folder_path(p);if(r){aiMsg(r);if(window._pikaDone)window._pikaDone();}};
+    const db=document.createElement('button');db.className='fdel';db.textContent='✕';
+    db.onclick=async function(){await pywebview.api.del_fav_folder(p);renderFavs()};
+    it.appendChild(lbl);it.appendChild(ob);it.appendChild(cb);it.appendChild(db);box.appendChild(it);
+  });
+}
+function openSettings(){
+  const m=document.getElementById('setmodal');
+  document.getElementById('set_dark').checked=document.body.classList.contains('dark');
+  document.getElementById('set_pika').checked=(pikaEl.style.display!=='none');
+  document.getElementById('set_style').value=(window._answerStyle||'표준');
+  document.getElementById('set_rate').value=_setRate;
+  document.getElementById('set_rateval').textContent=(_setRate).toFixed(2)+'x';
+  renderFavs();m.style.display='flex';
+}
+document.getElementById('setbtn').onclick=openSettings;
+document.getElementById('setclose').onclick=function(){document.getElementById('setmodal').style.display='none'};
+document.getElementById('set_dark').onchange=function(){applyTheme(this.checked);pywebview.api.save_theme(this.checked)};
+document.getElementById('set_pika').onchange=function(){pikaShow(this.checked);pywebview.api.save_pika(this.checked)};
+document.getElementById('set_style').onchange=function(){
+  window._answerStyle=this.value;pywebview.api.set_style(this.value).then(sysMsg)};
+document.getElementById('set_rate').oninput=function(){
+  _setRate=parseFloat(this.value);window._ttsRate=_setRate;
+  document.getElementById('set_rateval').textContent=_setRate.toFixed(2)+'x';
+  pywebview.api.save_tts_rate(_setRate);
+};
+document.getElementById('set_addfav').onclick=async function(){await pywebview.api.add_fav_folder();renderFavs()};
+
+/* ── 워크플로우 보드 ── */
+var wfData={projects:[]};var wfMode='proj';
+var PRI=['높음','보통','낮음'];var STAT=['todo','doing','done'];
+var STATLBL={todo:'할 일',doing:'진행중',done:'완료'};
+async function openWf(){wfData=await pywebview.api.wf_data();renderWf();
+  document.getElementById('wfmodal').style.display='flex';}
+function _projProgress(p){var ts=p.tasks||[];var done=ts.filter(function(t){return t.status==='done'}).length;
+  return{done:done,total:ts.length,pct:ts.length?Math.round(done/ts.length*100):0};}
+function taskCard(p,t){
+  var c=document.createElement('div');c.className='wftask pri-'+(t.priority||'보통')+(t.status==='done'?' done':'');
+  var tt=document.createElement('div');tt.className='wtt';
+  tt.textContent=(t.status==='doing'?'▶ ':t.status==='done'?'✓ ':'')+t.title;
+  var meta=document.createElement('div');meta.className='wtmeta';
+  meta.innerHTML='<span>'+STATLBL[t.status||'todo']+'</span>'+(t.due?'<span>📅 '+t.due+'</span>':'')+'<span>'+(t.priority||'보통')+'</span>';
+  var x=document.createElement('span');x.className='wtx';x.textContent='✕';
+  x.onclick=async function(e){e.stopPropagation();wfData=await pywebview.api.wf_del_task(p.id,t.id);renderWf()};
+  c.onclick=async function(){   // 클릭하면 상태 순환 todo→doing→done→todo
+    var ni=(STAT.indexOf(t.status||'todo')+1)%3;
+    wfData=await pywebview.api.wf_set_task(p.id,t.id,{status:STAT[ni]});renderWf();
+    if(STAT[ni]==='done'&&window._pikaDone)window._pikaDone();
+  };
+  c.oncontextmenu=async function(e){e.preventDefault();   // 우클릭: 우선순위 순환
+    var ni=(PRI.indexOf(t.priority||'보통')+1)%3;
+    wfData=await pywebview.api.wf_set_task(p.id,t.id,{priority:PRI[ni]});renderWf();};
+  c.title='클릭: 진행상태 변경 · 우클릭: 중요도 변경';
+  c.appendChild(tt);c.appendChild(meta);c.appendChild(x);return c;
+}
+function projColumn(p){
+  var col=document.createElement('div');col.className='wfcol';col.style.borderTopColor=p.color||'#5B6CFF';
+  var top=document.createElement('div');top.className='wfcoltop';
+  var b=document.createElement('b');b.textContent=p.name;
+  var fo=document.createElement('span');fo.className='wficon';
+  if(p.folder){fo.textContent='📂';fo.title='연결 폴더 열기'+(p.file_count!=null?' ('+p.file_count+'개 파일)':'');
+    fo.onclick=function(){pywebview.api.open_folder_path(p.folder)};}
+  var del=document.createElement('span');del.className='wficon';del.textContent='🗑';del.title='프로젝트 삭제';
+  del.onclick=async function(){if(await askConfirm('프로젝트 "'+p.name+'"을(를) 삭제할까요?')){
+    wfData=await pywebview.api.wf_del_project(p.id);renderWf();}};
+  top.appendChild(b);if(p.folder)top.appendChild(fo);top.appendChild(del);
+  var pr=_projProgress(p);
+  var bar=document.createElement('div');bar.className='wfbar';var fill=document.createElement('i');
+  fill.style.width=pr.pct+'%';fill.style.background=p.color||'#5B6CFF';bar.appendChild(fill);
+  var prog=document.createElement('div');prog.className='wfprog';
+  prog.textContent=pr.done+'/'+pr.total+' 완료 ('+pr.pct+'%)'+(p.file_count!=null?' · 파일 '+p.file_count+'개':'');
+  col.appendChild(top);col.appendChild(bar);col.appendChild(prog);
+  var order={'높음':0,'보통':1,'낮음':2};
+  (p.tasks||[]).slice().sort(function(a,b2){return (order[a.priority]||1)-(order[b2.priority]||1)})
+    .forEach(function(t){col.appendChild(taskCard(p,t))});
+  var add=document.createElement('button');add.className='wfaddtask';add.textContent='＋ 업무 추가';
+  add.onclick=async function(){var title=await askInput('업무 추가','업무 이름 (예: 평면도 수정)');if(!title)return;
+    wfData=await pywebview.api.wf_add_task(p.id,title,'보통','');renderWf();};
+  col.appendChild(add);return col;
+}
+function renderWf(){
+  var board=document.getElementById('wfboard');board.innerHTML='';
+  if(!wfData.projects||!wfData.projects.length){
+    board.innerHTML='<div class="wfempty">아직 프로젝트가 없습니다.<br>오른쪽 위 <b>＋ 프로젝트</b>로 시작하거나, 채팅에 "○○ 프로젝트 만들어줘"라고 하세요.</div>';return;}
+  if(wfMode==='proj'){
+    wfData.projects.forEach(function(p){board.appendChild(projColumn(p))});
+  }else{   // 우선순위별: 높음/보통/낮음 컬럼에 모든 프로젝트 업무를 모음
+    PRI.forEach(function(pri){
+      var col=document.createElement('div');col.className='wfcol wfpgroup';
+      col.style.borderTopColor=(pri==='높음'?'#e8473f':pri==='보통'?'#f0993e':'#9aa0aa');
+      var top=document.createElement('div');top.className='wfcoltop';
+      var b=document.createElement('b');b.textContent='중요도: '+pri;top.appendChild(b);col.appendChild(top);
+      var any=false;
+      wfData.projects.forEach(function(p){
+        (p.tasks||[]).filter(function(t){return (t.priority||'보통')===pri}).forEach(function(t){
+          any=true;var c=taskCard(p,t);
+          var tag=document.createElement('div');tag.className='wtmeta';
+          tag.innerHTML='<span style="color:'+(p.color||'#5B6CFF')+'">● '+p.name+'</span>';
+          c.insertBefore(tag,c.firstChild);col.appendChild(c);});
+      });
+      if(!any){var e=document.createElement('div');e.className='wfprog';e.textContent='해당 업무 없음';col.appendChild(e);}
+      board.appendChild(col);
+    });
+  }
+}
+document.getElementById('wfbtn').onclick=openWf;
+document.getElementById('wfclose').onclick=function(){document.getElementById('wfmodal').style.display='none'};
+document.getElementById('wf_byproj').onclick=function(){wfMode='proj';
+  this.classList.add('on');document.getElementById('wf_bypri').classList.remove('on');renderWf();};
+document.getElementById('wf_bypri').onclick=function(){wfMode='pri';
+  this.classList.add('on');document.getElementById('wf_byproj').classList.remove('on');renderWf();};
+document.getElementById('wf_addproj').onclick=async function(){
+  var name=await askInput('새 프로젝트','프로젝트 이름 (예: 강남 카페 리노베이션)');if(!name)return;
+  var link=await askConfirm('이 프로젝트에 작업 폴더를 연결할까요? (진척도에 파일 수가 표시됩니다)');
+  var folder='';if(link){folder=await pywebview.api.wf_pick_folder();}
+  wfData=await pywebview.api.wf_add_project(name,null,folder);renderWf();};
+window._wfRefresh=async function(){wfData=await pywebview.api.wf_data();
+  if(document.getElementById('wfmodal').style.display==='flex')renderWf();};
+
 /* ── 폴더 정리 ── */
 document.getElementById('cleanbtn').onclick=async function(){
   if(window._pikaWork)window._pikaWork();
@@ -3176,6 +3494,31 @@ def save_settings(patch):
         os.replace(tmp, SETTINGS)
     except Exception as e:
         log(f"설정 저장 실패: {e}")
+
+
+def wf_load():
+    """워크플로우(프로젝트·업무) 데이터를 읽어 반환. 없으면 빈 구조."""
+    try:
+        with open(WORKFLOW, encoding="utf-8") as f:
+            d = json.load(f)
+            if isinstance(d, dict) and isinstance(d.get("projects"), list):
+                return d
+    except Exception:
+        pass
+    return {"projects": []}
+
+
+def wf_save(d):
+    """워크플로우 데이터를 원자적으로 저장."""
+    try:
+        os.makedirs(HOME, exist_ok=True)
+        tmp = WORKFLOW + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False, indent=1)
+        os.replace(tmp, WORKFLOW)
+    except Exception as e:
+        log(f"워크플로우 저장 실패: {e}")
+    return d
 
 
 def check_for_update():
@@ -3555,7 +3898,14 @@ class Api:
         if not sel:
             return ""  # 취소
         folder = sel[0] if isinstance(sel, (list, tuple)) else sel
-        if not os.path.isdir(folder):
+        return self._organize_into(folder)
+
+    def organize_folder_path(self, folder):
+        """경로를 직접 받아 그 폴더를 종류별로 정리한다 (즐겨찾기에서 호출)."""
+        return self._organize_into(folder)
+
+    def _organize_into(self, folder):
+        if not folder or not os.path.isdir(folder):
             return "⚠ 폴더가 아닙니다."
 
         CATS = {
@@ -3610,6 +3960,138 @@ class Api:
         for c, n in sorted(moved.items(), key=lambda x: -x[1]):
             lines.append(f"- 📂 **{c}** — {n}개")
         return "\n".join(lines)
+
+    def read_clipboard(self):
+        """클립보드의 텍스트를 돌려준다 (복사한 내용 빠른 질문용)."""
+        try:
+            import win32clipboard
+            win32clipboard.OpenClipboard()
+            try:
+                if win32clipboard.IsClipboardFormatAvailable(win32clipboard.CF_UNICODETEXT):
+                    return win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT) or ""
+            finally:
+                win32clipboard.CloseClipboard()
+        except Exception as e:
+            log(f"read_clipboard 실패: {e}")
+        return ""
+
+    # ---------- 워크플로우 (프로젝트·업무 보드) ----------
+    def wf_data(self):
+        """전체 워크플로우 데이터. 폴더가 연결된 프로젝트는 파일 수도 함께 계산."""
+        d = wf_load()
+        for p in d.get("projects", []):
+            fp = p.get("folder")
+            if fp and os.path.isdir(fp):
+                try:
+                    p["file_count"] = sum(1 for n in os.listdir(fp)
+                                          if os.path.isfile(os.path.join(fp, n)))
+                except Exception:
+                    p["file_count"] = None
+        return d
+
+    def wf_add_project(self, name, color=None, folder=None):
+        d = wf_load()
+        pid = int(time.time() * 1000)
+        d["projects"].append({"id": pid, "name": (name or "새 프로젝트").strip(),
+                              "color": color or "#5B6CFF", "folder": folder or "",
+                              "tasks": []})
+        return wf_save(d)
+
+    def wf_set_project(self, pid, fields):
+        d = wf_load()
+        for p in d["projects"]:
+            if p["id"] == pid:
+                for k in ("name", "color", "folder"):
+                    if k in fields:
+                        p[k] = fields[k]
+        return wf_save(d)
+
+    def wf_del_project(self, pid):
+        d = wf_load()
+        d["projects"] = [p for p in d["projects"] if p["id"] != pid]
+        return wf_save(d)
+
+    def wf_pick_folder(self):
+        """프로젝트에 연결할 폴더를 고른다."""
+        try:
+            sel = self._window.create_file_dialog(
+                webview.FOLDER_DIALOG,
+                directory=os.path.join(os.path.expanduser("~"), "Desktop"))
+            if sel:
+                return sel[0] if isinstance(sel, (list, tuple)) else sel
+        except Exception as e:
+            log(f"wf_pick_folder 실패: {e}")
+        return ""
+
+    def wf_add_task(self, pid, title, priority="보통", due=""):
+        d = wf_load()
+        for p in d["projects"]:
+            if p["id"] == pid:
+                p.setdefault("tasks", []).append({
+                    "id": int(time.time() * 1000),
+                    "title": (title or "새 업무").strip(),
+                    "status": "todo", "priority": priority or "보통",
+                    "due": due or "", "memo": ""})
+        return wf_save(d)
+
+    def wf_set_task(self, pid, tid, fields):
+        d = wf_load()
+        for p in d["projects"]:
+            if p["id"] == pid:
+                for t in p.get("tasks", []):
+                    if t["id"] == tid:
+                        for k in ("title", "status", "priority", "due", "memo"):
+                            if k in fields:
+                                t[k] = fields[k]
+        return wf_save(d)
+
+    def wf_del_task(self, pid, tid):
+        d = wf_load()
+        for p in d["projects"]:
+            if p["id"] == pid:
+                p["tasks"] = [t for t in p.get("tasks", []) if t["id"] != tid]
+        return wf_save(d)
+
+    def fav_folders(self):
+        """등록된 즐겨찾기 폴더 목록을 돌려준다."""
+        return load_settings().get("fav_folders", [])
+
+    def add_fav_folder(self):
+        """폴더를 골라 즐겨찾기에 추가한다."""
+        try:
+            sel = self._window.create_file_dialog(
+                webview.FOLDER_DIALOG,
+                directory=os.path.join(os.path.expanduser("~"), "Desktop"))
+        except Exception as e:
+            log(f"add_fav_folder 실패: {e}")
+            return self.fav_folders()
+        if not sel:
+            return self.fav_folders()
+        folder = sel[0] if isinstance(sel, (list, tuple)) else sel
+        favs = load_settings().get("fav_folders", [])
+        if folder not in favs:
+            favs.append(folder)
+            save_settings({"fav_folders": favs})
+        return favs
+
+    def del_fav_folder(self, path):
+        favs = [f for f in load_settings().get("fav_folders", []) if f != path]
+        save_settings({"fav_folders": favs})
+        return favs
+
+    def open_folder_path(self, path):
+        """탐색기로 폴더를 연다."""
+        try:
+            if os.path.isdir(path):
+                os.startfile(path)
+                return "ok"
+        except Exception as e:
+            log(f"open_folder_path 실패: {e}")
+        return "fail"
+
+    def save_tts_rate(self, rate):
+        save_settings({"tts_rate": float(rate)})
+        return "ok"
 
     def start_voice(self):
         """마이크 음성을 받아 한국어 텍스트로 변환해 돌려준다 (faster-whisper, 로컬)."""
@@ -4088,6 +4570,14 @@ class Api:
         except Exception:
             pass
         self._js(f"window._modelName={json.dumps(self._model or '')}")  # 응답 메타 표시용
+        try:   # 설정값을 JS로 전달 (답변 스타일·음성 속도)
+            _s2 = load_settings()
+            self._js(f"window._answerStyle={json.dumps(_s2.get('answer_style', ANSWER_STYLE))}")
+            if _s2.get("tts_rate"):
+                self._js(f"window._ttsRate={float(_s2['tts_rate'])};"
+                         f"if(typeof _setRate!=='undefined')_setRate={float(_s2['tts_rate'])}")
+        except Exception:
+            pass
         # 모델 예열 — 실제 시스템 프롬프트까지 미리 처리해 프리픽스 캐시를 채운다
         # (첫 질문도 곧바로 응답 시작). keep_alive 60분 동안 메모리에 상주.
         def warmup():
@@ -4471,6 +4961,14 @@ class Api:
                         self._js("calRefresh()")
                     except Exception as e:
                         self._sysmsg(f"일정 저장 오류: {e}")
+
+                # 워크플로우 도구 — 프로젝트/업무 추가 후 보드 갱신
+                for wb in re.findall(r"```work\n(.*?)```", reply, re.S):
+                    try:
+                        self._sysmsg(handle_work_block(wb))
+                        self._js("if(window._wfRefresh)window._wfRefresh()")
+                    except Exception as e:
+                        self._sysmsg(f"워크플로우 저장 오류: {e}")
 
                 # 화면 자동화 — 프리패스: 바로 실행 (마우스를 화면 모서리로 옮기면 즉시 중단)
                 auto_blocks = re.findall(r"```auto\n(.*?)```", reply, re.S)
