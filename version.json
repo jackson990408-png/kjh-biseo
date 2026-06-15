@@ -1,5 +1,5 @@
 {
-  "version": "KJH비서_1.3.0",
+  "version": "KJH비서_1.3.1",
   "download_url": "https://raw.githubusercontent.com/jackson990408-png/kjh-biseo/main/files/biseo.pyw",
-  "changelog": "워크플로우 상시 사이드 패널(우측 고정, 진행률·우선순위 색상, 클릭으로 상태변경), 쇼핑·주문 자동화 흐름(쿠팡/네이버/11번가/지마켓 검색·후보표·결제 전 확인), 첨부 이미지·DXF 도면 썸네일 미리보기"
+  "changelog": "일정·메모 창 폭 확대(720px)·버튼 줄바꿈으로 잘림 해결, 워크플로우 상시 사이드 패널, 쇼핑·주문 자동화 흐름, 첨부 이미지·DXF 도면 썸네일 미리보기"
 }
