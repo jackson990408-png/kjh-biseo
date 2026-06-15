@@ -1,5 +1,5 @@
 {
-  "version": "KJH비서_1.1.0",
+  "version": "KJH비서_1.2.0",
   "download_url": "https://raw.githubusercontent.com/jackson990408-png/kjh-biseo/main/files/biseo.pyw",
-  "changelog": "피카츄 캐릭터(이동 가능·표정 3종), 폴더 자동정리, 코워크 사원 모드, 업무 위임 버튼, 파일 요약·표 정리 강화"
+  "changelog": "워크플로우 보드(프로젝트·업무 진척도, 중요도 색상, 프로젝트별/우선순위별), 통합 설정 패널, 음성 속도 조절, 클립보드 빠른 질문, 즐겨찾기 폴더, AI 코워크·선제 제안 강화"
 }
